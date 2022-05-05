@@ -103,13 +103,15 @@ namespace ovdbutil
         const openvdb::math::Transform& tr,
         float               exteriorBandWidth,
         float               interiorBandWidth,
-        int                 flags = 0)
+        double voxel_size,
+        int                 flags = 0
+        )
     {
         openvdb::initialize();
 
         openvdb::FloatGrid::Ptr grid = openvdb::tools::meshToVolume<openvdb::FloatGrid>(
                 TriangleMeshDataAdapter{ *mesh }, tr, exteriorBandWidth,
-                interiorBandWidth, flags);
+                interiorBandWidth, voxel_size, flags);
 
         return grid;
     }
@@ -180,7 +182,7 @@ namespace ovdbutil
         double               min_thickness,
         double               voxel_scale,
         double               closing_dist,
-        ccglobal::Tracer* tracer)
+        ccglobal::Tracer* tracer, double voxel_size)
     {
         //_scale(voxel_scale, imesh);
 
@@ -195,7 +197,7 @@ namespace ovdbutil
         if (tracer)
             tracer->progress(0.0f);
 
-        openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range);
+        openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size);
         
         if (!gridptr) {
             if(tracer)
@@ -251,9 +253,9 @@ namespace ovdbutil
         //
         // max 8x upscale, min is native voxel size
         // double voxel_scale = MIN_OVERSAMPL + (MAX_OVERSAMPL - MIN_OVERSAMPL) * parameter.quality;
-        double voxel_scale = 1.0;
+        double voxel_scale = parameter.voxel_size_inout_range;
         trimesh::TriMesh* meshptr = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
-                parameter.closing_distance, tracer);
+                parameter.closing_distance, tracer, parameter.voxel_size);
 
         if (meshptr) {
             mmesh::reverseTriMesh(meshptr);

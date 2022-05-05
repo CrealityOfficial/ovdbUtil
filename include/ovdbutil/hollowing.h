@@ -19,6 +19,8 @@ namespace ovdbutil
         double min_thickness = 1.0;
         double quality = 0.5;
         double closing_distance = 0.0;
+        double voxel_size_inout_range = 1.0;
+        double voxel_size = 1.0;
     };
 
     OVDBUTIL_API trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh,
