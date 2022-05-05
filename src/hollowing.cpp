@@ -188,8 +188,8 @@ namespace ovdbutil
 
         double offset = voxel_scale * min_thickness;
         double D = voxel_scale * closing_dist;
-        float  out_range = 0.1f * float(offset);
-        float  in_range = 1.1f * float(offset + D);
+        float  out_range = 0.03f * float(offset);
+        float  in_range = 1.9f * float(offset + D);
         
         if (tracer && tracer->interrupt())
             return nullptr;
