@@ -21,6 +21,10 @@ namespace ovdbutil
         double closing_distance = 0.0;
         double voxel_size_inout_range = 1.0;
         double voxel_size = 1.0;
+		
+		
+		bool fillEnable = true;
+		double fillratio;
     };
 
     struct TwoTrimesh
