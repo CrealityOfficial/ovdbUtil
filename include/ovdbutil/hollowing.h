@@ -1,6 +1,8 @@
 #ifndef OVDBUTIL_HOLLOWING_1650957593077_H
 #define OVDBUTIL_HOLLOWING_1650957593077_H
 #include "ovdbutil/interface.h"
+#include <vector>
+#include "trimesh2/TriMesh.h"
 
 namespace trimesh
 {
@@ -23,13 +25,6 @@ namespace ovdbutil
         double voxel_size = 1.0;
     };
 
-    struct TwoTrimesh
-    {
-        trimesh::TriMesh *m1;
-        trimesh::TriMesh *m2;
-    };
-
-    OVDBUTIL_API trimesh::TriMesh* generateBoolcom(ovdbutil::TwoTrimesh* mesh, const int type, ccglobal::Tracer* tracer=nullptr);
     OVDBUTIL_API trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh,
         const HollowingParameter& = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 

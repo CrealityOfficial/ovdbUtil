@@ -5,8 +5,12 @@ __enable_bigobj()
 set(SRCS include/ovdbutil/interface.h
 		 include/ovdbutil/init.h
 		 include/ovdbutil/hollowing.h
+		 include/ovdbutil/booleanCom.h
 		 src/init.cpp
 		 src/hollowing.cpp
+		 src/booleanCom.cpp
+		 src/util.h
+		 src/util.cpp
 		 )
 		
 set(INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)

@@ -1,178 +1,11 @@
 #include "ovdbutil/hollowing.h"
-#include <openvdb/openvdb.h>
-#include <openvdb/tools/MeshToVolume.h>
-#include <openvdb/tools/VolumeToMesh.h>
-#include <openvdb/tools/Composite.h>
-#include <openvdb/tools/LevelSetRebuild.h>
 
-#include "trimesh2/TriMesh.h"
+#include "util.h"
 #include "mmesh/trimesh/trimeshutil.h"
-
 #include "ccglobal/tracer.h"
 
 namespace ovdbutil
 {
-    inline trimesh::vec3 to_vec3f(const openvdb::Vec3s& v) { return trimesh::vec3(v.x(), v.y(), v.z()); }
-    inline trimesh::dvec3 to_vec3d(const openvdb::Vec3s& v) { return trimesh::dvec3(v.x(), v.y(), v.z()); }
-    inline trimesh::ivec3 to_vec3i(const openvdb::Vec3I& v) { return trimesh::ivec3(int(v[0]), int(v[1]), int(v[2])); }
-    inline trimesh::ivec4 to_vec4i(const openvdb::Vec4I& v) { return trimesh::ivec4(int(v[0]), int(v[1]), int(v[2]), int(v[3])); }
-
-    struct Contour3D {
-        std::vector<trimesh::vec3> points;
-        std::vector<trimesh::ivec3> faces3;
-        std::vector<trimesh::ivec4> faces4;
-
-        Contour3D() = default;
-        inline bool empty() const
-        {
-            return points.empty() || (faces4.empty() && faces3.empty());
-        }
-    };
-
-    trimesh::TriMesh* to_triangle_mesh(const Contour3D& ctour) {
-        trimesh::TriMesh* mesh = new trimesh::TriMesh();
-        mesh->vertices = ctour.points;
-        if (ctour.faces4.empty())
-        {
-            mesh->faces = ctour.faces3;
-        }
-        else
-        {
-            mesh->faces.reserve(ctour.faces3.size() + 2 * ctour.faces4.size());
-            std::copy(ctour.faces3.begin(), ctour.faces3.end(),
-                std::back_inserter(mesh->faces));
-
-            for (const trimesh::ivec4& quad : ctour.faces4) {
-                mesh->faces.emplace_back(quad[0], quad[1], quad[2]);
-                mesh->faces.emplace_back(quad[2], quad[3], quad[0]);
-            }
-        }
-
-        return mesh;
-    }
-
-    class TriangleMeshDataAdapter {
-    public:
-        trimesh::TriMesh& mesh;
-
-        size_t polygonCount() const { return mesh.faces.size(); }
-        size_t pointCount() const { return mesh.vertices.size(); }
-        size_t vertexCount(size_t) const { return 3; }
-
-        // Return position pos in local grid index space for polygon n and vertex v
-        void getIndexSpacePoint(size_t n, size_t v, openvdb::Vec3d& pos) const;
-    };
-
-    class Contour3DDataAdapter {
-    public:
-        const Contour3D& mesh;
-
-        size_t polygonCount() const { return mesh.faces3.size() + mesh.faces4.size(); }
-        size_t pointCount() const { return mesh.points.size(); }
-        size_t vertexCount(size_t n) const { return n < mesh.faces3.size() ? 3 : 4; }
-
-        // Return position pos in local grid index space for polygon n and vertex v
-        void getIndexSpacePoint(size_t n, size_t v, openvdb::Vec3d& pos) const;
-    };
-
-    void TriangleMeshDataAdapter::getIndexSpacePoint(size_t          n,
-        size_t          v,
-        openvdb::Vec3d& pos) const
-    {
-        size_t vidx = size_t(mesh.faces[n][v]);
-        trimesh::dvec3 p = trimesh::dvec3(mesh.vertices[vidx]);
-        pos = { p.x, p.y, p.z };
-    }
-
-    void Contour3DDataAdapter::getIndexSpacePoint(size_t          n,
-        size_t          v,
-        openvdb::Vec3d& pos) const
-    {
-        size_t vidx = 0;
-        if (n < mesh.faces3.size()) vidx = size_t(mesh.faces3[n][v]);
-        else vidx = size_t(mesh.faces4[n - mesh.faces3.size()][v]);
-
-        trimesh::vec3 p = mesh.points[vidx];
-        pos = { p.x, p.y, p.z };
-    }
-
-// TODO: Do I need to call initialize? Seems to work without it as well but the
-// docs say it should be called ones. It does a mutex lock-unlock sequence all
-// even if was called previously.
-    openvdb::FloatGrid::Ptr mesh_to_grid(trimesh::TriMesh* mesh,
-        const openvdb::math::Transform& tr,
-        float               exteriorBandWidth,
-        float               interiorBandWidth,
-        double voxel_size,
-        int                 flags = 0
-        )
-    {
-        openvdb::initialize();
-
-        openvdb::FloatGrid::Ptr grid = openvdb::tools::meshToVolume<openvdb::FloatGrid>(
-                TriangleMeshDataAdapter{ *mesh }, tr, exteriorBandWidth,
-                interiorBandWidth, voxel_size, flags);
-
-        return grid;
-    }
-
-    openvdb::FloatGrid::Ptr mesh_to_grid(const Contour3D& mesh,
-        const openvdb::math::Transform& tr,
-        float exteriorBandWidth,
-        float interiorBandWidth,
-        int flags = 0)
-    {
-        openvdb::initialize();
-        return openvdb::tools::meshToVolume<openvdb::FloatGrid>(
-            Contour3DDataAdapter{ mesh }, tr, exteriorBandWidth, interiorBandWidth,
-            flags);
-    }
-
-    template<class Grid>
-    Contour3D _volumeToMesh(const Grid& grid,
-        double      isovalue,
-        double      adaptivity,
-        bool        relaxDisorientedTriangles)
-    {
-        openvdb::initialize();
-
-        std::vector<openvdb::Vec3s> points;
-        std::vector<openvdb::Vec3I> triangles;
-        std::vector<openvdb::Vec4I> quads;
-
-        openvdb::tools::volumeToMesh(grid, points, triangles, quads, isovalue,
-            adaptivity, relaxDisorientedTriangles);
-
-        Contour3D ret;
-        ret.points.reserve(points.size());
-        ret.faces3.reserve(triangles.size());
-        ret.faces4.reserve(quads.size());
-
-        for (auto& v : points) ret.points.emplace_back(to_vec3d(v));
-        for (auto& v : triangles) ret.faces3.emplace_back(to_vec3i(v));
-        for (auto& v : quads) ret.faces4.emplace_back(to_vec4i(v));
-
-        return ret;
-    }
-
-    trimesh::TriMesh* grid_to_mesh(const openvdb::FloatGrid& grid,
-        double                    isovalue,
-        double                    adaptivity,
-        bool                      relaxDisorientedTriangles)
-    {
-        return to_triangle_mesh(
-            _volumeToMesh(grid, isovalue, adaptivity, relaxDisorientedTriangles));
-    }
-
-    Contour3D grid_to_contour3d(const openvdb::FloatGrid& grid,
-        double                    isovalue,
-        double                    adaptivity,
-        bool relaxDisorientedTriangles)
-    {
-        return _volumeToMesh(grid, isovalue, adaptivity,
-            relaxDisorientedTriangles);
-    }
-
     openvdb::FloatGrid::Ptr redistance_grid(const openvdb::FloatGrid& grid, double iso, double er = 3.0, double ir = 3.0)
     {
         return openvdb::tools::levelSetRebuild(grid, float(iso), float(er), float(ir));
@@ -199,6 +32,30 @@ namespace ovdbutil
 
         openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size);
         
+
+
+        //openvdb::FloatGrid::Ptr gridptrout1 = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size);
+        //// Get the source and target grids' index space to world space transforms.
+        //const openvdb::math::Transform
+        //    & sourceXform = gridptr->transform(),
+        //    & targetXform = gridptrout1->transform();
+        //// Compute a source grid to target grid transform.
+        //// (For this example, we assume that both grids' transforms are linear,
+        //// so that they can be represented as 4 x 4 matrices.)
+        //openvdb::Mat4R xform =
+        //    sourceXform.createLinearTransform(40.0).get()->baseMap()->getAffineMap()->getMat4() *
+        //    targetXform.createLinearTransform(40.0).get()->baseMap()->getAffineMap()->getMat4().inverse();
+        //for (int i=0; i< 16; i++)
+        //    xform.asPointer()[i]= xform.asPointer()[i]*10;
+        //// Create the transformer.
+        //openvdb::tools::GridTransformer transformer(xform);
+        //// Resample using nearest-neighbor interpolation.
+        //transformer.transformGrid<openvdb::tools::QuadraticSampler, openvdb::FloatGrid>(
+        //    *gridptr, *gridptrout1);
+        //// Prune the target tree for optimal sparsity.
+        //gridptrout1->tree().prune();
+
+
         if (!gridptr) {
             if(tracer)
                 tracer->failed("Returned OpenVDB grid is NULL");
@@ -256,69 +113,6 @@ namespace ovdbutil
         double voxel_scale = parameter.voxel_size_inout_range;
         trimesh::TriMesh* meshptr = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
                 parameter.closing_distance, tracer, parameter.voxel_size);
-
-        if (meshptr) {
-            mmesh::reverseTriMesh(meshptr);
-        }
-
-        return meshptr;
-    }
-
-    static trimesh::TriMesh* _generate_boolcom(ovdbutil::TwoTrimesh* mesh,
-        const int type, ccglobal::Tracer* tracer)
-    {
-        if (tracer && tracer->interrupt())
-            return nullptr;
-
-        if (tracer)
-            tracer->progress(0.0f);
-
-        float offset = 1;
-        float D = 0;
-        float  out_range = 1.0f * float(offset);
-        float  in_range = 1.f * float(offset + D);
-        float voxel_size = 0.05;
-        openvdb::FloatGrid::Ptr gridptr1 = mesh_to_grid(mesh->m1, {}, out_range, in_range, voxel_size);
-        openvdb::FloatGrid::Ptr gridptr2 = mesh_to_grid(mesh->m2, {}, out_range, in_range, voxel_size);
-
-        if (type==0)  openvdb::tools::csgIntersection(*gridptr1, *gridptr2);
-        if (type == 1)  openvdb::tools::csgUnion(*gridptr1, *gridptr2);
-        if (type == 2)  openvdb::tools::csgDifference(*gridptr1, *gridptr2);
-
-        if (tracer)
-            tracer->progress(0.4f);
-        if (!gridptr1) {
-            if (tracer)
-                tracer->failed("Returned OpenVDB grid is NULL");
-            return nullptr;
-        }
-        if (!gridptr2) {
-            if (tracer)
-                tracer->failed("Returned OpenVDB grid is NULL");
-            return nullptr;
-        }
-
-        if (tracer)
-            tracer->progress(0.7f);
-        
-
-
-        if (tracer)
-            tracer->progress(1.0f);
-        double iso_surface = 0.;
-        double adaptivity = 0.;
-        auto omesh = grid_to_mesh(*gridptr1, iso_surface, adaptivity, false);
-
-        return omesh;
-    }
-    trimesh::TriMesh* generateBoolcom(ovdbutil::TwoTrimesh* mesh,
-        const int type, ccglobal::Tracer* tracer)
-    {
-        static const double MIN_OVERSAMPL = 3.;
-        static const double MAX_OVERSAMPL = 8.;
-
-//        double voxel_scale = parameter.voxel_size_inout_range;
-        trimesh::TriMesh* meshptr = _generate_boolcom(mesh, type,tracer);
 
         if (meshptr) {
             mmesh::reverseTriMesh(meshptr);
