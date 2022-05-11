@@ -16,6 +16,18 @@ namespace ccglobal
 
 namespace ovdbutil
 {
+	typedef struct INNER_FILL_CONFIG
+	{
+		bool enable = false;//填充使能
+		int filltype = 0;
+		float fillRadius = 1.0;//填充的半径
+		float fillratio = 0.5;//填充的比率
+		float fillLenMin = 1.0;//填充的最小长度
+		float gridSizeMin = 5.0;//MarchingCube体素最小大小
+		float gridSize = 5.0;//MarchingCube体素大小
+	}sINNER_FILL_CFG;
+
+
     struct HollowingParameter
     {
         double min_thickness = 1.0;
@@ -23,9 +35,11 @@ namespace ovdbutil
         double closing_distance = 0.0;
         double voxel_size_inout_range = 1.0;
         double voxel_size = 1.0;
+		
+		
+		INNER_FILL_CONFIG fill_config;
     };
 
-    OVDBUTIL_API trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh,
         const HollowingParameter& = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 
     OVDBUTIL_API void hollowMesh(trimesh::TriMesh* mesh,
