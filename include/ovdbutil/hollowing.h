@@ -40,8 +40,9 @@ namespace ovdbutil
 		INNER_FILL_CONFIG fill_config;
     };
 
-        const HollowingParameter& = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
-
+        
+    OVDBUTIL_API trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh, std::vector<trimesh::vec3>* supportPoints,
+        const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
     OVDBUTIL_API void hollowMesh(trimesh::TriMesh* mesh,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 }

@@ -252,7 +252,7 @@ namespace ovdbutil
     }
 
     trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh, std::vector<trimesh::vec3>* supportPoints,
-        const HollowingParameter& parameter,ccglobal::Tracer* tracer)
+        const HollowingParameter& parameter, ccglobal::Tracer* tracer)
     {
         static const double MIN_OVERSAMPL = 3.;
         static const double MAX_OVERSAMPL = 8.;
