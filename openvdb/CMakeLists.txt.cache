@@ -1,3 +1,12 @@
+# Copyright Contributors to the OpenVDB Project
+# SPDX-License-Identifier: MPL-2.0
+#
+#[=======================================================================[
+
+  CMake Configuration for OpenVDB Core
+
+#]=======================================================================]
+
 set(OpenVDB_MAJOR_VERSION 9)
 set(OpenVDB_MINOR_VERSION 0)
 set(OpenVDB_PATCH_VERSION 1)
@@ -23,10 +32,6 @@ message(STATUS "----------------------------------------------------")
 __enable_bigobj()
 __assert_target(boost_iostreams)
 __assert_target(tbb)
-
-__cc_find(Trimesh2)
-__assert_target(trimesh2)
-__enable_bigobj()
 
 if(UNIX)
   find_package(Threads REQUIRED)
@@ -288,26 +293,11 @@ set(SRCS ${OPENVDB_LIBRARY_THREAD_INCLUDE_FILES}
 		 ${OPENVDB_LIBRARY_SOURCE_FILES}
 		 )
 set(INCS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-set(DEFS ${OPENVDB_CORE_PRIVATE_DEFINES} OPENVDB_STATIC OPENVDB_STATICLIB)
+set(INTERFACES ${INCS})
+set(DEFS ${OPENVDB_CORE_PRIVATE_DEFINES})
 set(LIBS ${OPENVDB_CORE_DEPENDENT_LIBS})
 
-list(APPEND SRCS include/ovdbutil/interface.h
-		 include/ovdbutil/init.h
-		 include/ovdbutil/hollowing.h
-		 include/ovdbutil/booleanCom.h
-		 src/init.cpp
-		 src/hollowing.cpp
-		 src/booleanCom.cpp
-		 src/util.h
-		 src/util.cpp
-		 )
-		
-list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-list(APPEND LIBS trimesh2 mmesh boost_iostreams tbb)
+__add_common_library(openvdb)
+# Configure static build
 
-__add_common_library(ovdbutil)
-
-if(CC_INSTALL_OVDBUTIL)
-	__install_directory_specif(${CMAKE_CURRENT_SOURCE_DIR}/include/ ovdbutil)
-endif()
-
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/openvdb/version.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openvdb)
