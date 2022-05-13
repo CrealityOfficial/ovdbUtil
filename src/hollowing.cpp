@@ -4,6 +4,7 @@
 #include "mmesh/trimesh/trimeshutil.h"
 #include "ccglobal/tracer.h"
 #include <openvdb/tools/RayIntersector.h>
+#include "mmesh/create/createcylinder.h"
 
 namespace ovdbutil
 {
@@ -275,6 +276,58 @@ namespace ovdbutil
         }
 
         return meshptr;
+    }
+
+    OVDBUTIL_API trimesh::TriMesh* hollowMeshAndFill(trimesh::TriMesh* mesh,
+        const HollowingParameter & parameter, ccglobal::Tracer* tracer)
+    {
+        trimesh::TriMesh* meshAll;
+        static const double MIN_OVERSAMPL = 3.;
+        static const double MAX_OVERSAMPL = 8.;
+        std::vector<trimesh::point>* supportPoints = new std::vector<trimesh::point>;
+        double voxel_scale = parameter.voxel_size_inout_range;
+        trimesh::TriMesh* meshptr = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
+            parameter.closing_distance, tracer, parameter.voxel_size, parameter.fill_config, supportPoints);
+
+        if (meshptr) {
+            std::vector<trimesh::TriMesh*> meshtotalV;
+            meshtotalV.push_back(mesh);
+            meshtotalV.push_back(meshptr);
+
+            meshAll = new trimesh::TriMesh;
+            trimesh::vec3 anormal(0.0, 0.0, 1.0);
+
+#if 0 
+            //TODO :for fill
+            for (int n = 1; n < supportPoints->size(); n += 2)
+            {
+                trimesh::point& pointStart = (*supportPoints)[n - 1];
+                trimesh::point& pointEnd = (*supportPoints)[n];
+
+                float fHeight = trimesh::distance(pointStart, pointEnd);
+                trimesh::TriMesh* amesh = new trimesh::TriMesh();
+                pointStart.z += (pointEnd.z - pointStart.z) * 0.5 - parameter.min_thickness * 0.5;
+                amesh = mmesh::createSoupCylinder(10, 2, fHeight, pointStart, anormal);
+                amesh->need_bbox();
+                meshtotalV.push_back(amesh);
+            }
+#endif
+            trimesh::TriMesh* hollowFilledMesh = new trimesh::TriMesh();
+            mmesh::mergeTrianglesTriMesh(hollowFilledMesh, meshtotalV);
+            mmesh::mergeTriMesh(meshAll, meshtotalV);
+
+        }
+
+        if (supportPoints)
+        {
+            supportPoints->clear();
+            delete supportPoints;
+        }
+        if (!meshAll)
+        {
+            return mesh;
+        }
+        return meshAll;
     }
 
     void hollowMesh(trimesh::TriMesh* mesh,

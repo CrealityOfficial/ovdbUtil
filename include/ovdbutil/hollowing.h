@@ -3,6 +3,7 @@
 #include "ovdbutil/interface.h"
 #include <vector>
 #include "trimesh2/TriMesh.h"
+#include "trimesh2/TriMesh.h"
 
 namespace trimesh
 {
@@ -44,6 +45,9 @@ namespace ovdbutil
     OVDBUTIL_API trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh, std::vector<trimesh::vec3>* supportPoints,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
     OVDBUTIL_API void hollowMesh(trimesh::TriMesh* mesh,
+        const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
+
+    OVDBUTIL_API trimesh::TriMesh* hollowMeshAndFill(trimesh::TriMesh* mesh,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 }
 
