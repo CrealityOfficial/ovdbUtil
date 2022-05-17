@@ -177,10 +177,9 @@ namespace ovdbutil
         if (tracer)
             tracer->progress(0.0f);
 
-        openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size);
+        //bug for param flags: hollow Optimization 
+        openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size,0xE);
         
-
-
         //openvdb::FloatGrid::Ptr gridptrout1 = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size);
         //// Get the source and target grids' index space to world space transforms.
         //const openvdb::math::Transform
