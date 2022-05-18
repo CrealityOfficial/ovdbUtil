@@ -5,7 +5,8 @@
 #include "ccglobal/tracer.h"
 #include <openvdb/tools/RayIntersector.h>
 #include "mmesh/create/createcylinder.h"
-
+#include <openvdb/math/Vec3.h>
+#include <openvdb/math/Coord.h>
 namespace ovdbutil
 {
     openvdb::FloatGrid::Ptr redistance_grid(const openvdb::FloatGrid& grid, double iso, double er = 3.0, double ir = 3.0)
@@ -177,9 +178,43 @@ namespace ovdbutil
         if (tracer)
             tracer->progress(0.0f);
 
+<<<<<<< HEAD
         //bug for param flags: hollow Optimization 
         openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size,0xE);
         
+=======
+        //openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size);
+        openvdb::initialize();
+
+        // setup linear transform   
+        openvdb::math::Transform::Ptr xform =openvdb::math::Transform::createLinearTransform(0.25);
+
+        // CUBE 
+        std::vector<openvdb::math::Vec3s> cube_points;
+        std::vector<openvdb::math::Coord::Vec3I> cube_faces;
+        for (int i = 0; i < mesh->vertices.size(); i++)
+        {
+            cube_points.push_back(openvdb::math::Vec3s(mesh->vertices.at(i).x*4, mesh->vertices.at(i).y*4, mesh->vertices.at(i).z*4));
+        }
+        for (int i = 0; i < mesh->faces.size(); i++)
+        {
+            cube_faces.push_back(openvdb::math::Coord::Vec3I(mesh->faces.at(i).x, mesh->faces.at(i).y, mesh->faces.at(i).z));
+        }
+
+        openvdb::tools::QuadAndTriangleDataAdapter<openvdb::math::Vec3s, openvdb::math::Coord::Vec3I> mesh_a(cube_points, cube_faces);
+        //openvdb::FloatGrid::Ptr gridptr;
+        openvdb:: FloatGrid::Ptr gridptr = openvdb::tools::meshToVolume<openvdb::FloatGrid>(mesh_a, *xform);
+
+        //// Create a VDB file object.
+        //openvdb::io::File file("mygrids.vdb");
+        //// Add the grid pointer to a container.
+        //openvdb::GridPtrVec grids;
+        //grids.push_back(gridptr);
+        //// Write out the contents of the container.
+        //file.write(grids);
+        //file.close();
+
+>>>>>>> 7aa9757... detail  for  boolean com
         //openvdb::FloatGrid::Ptr gridptrout1 = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size);
         //// Get the source and target grids' index space to world space transforms.
         //const openvdb::math::Transform
