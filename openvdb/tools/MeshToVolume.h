@@ -46,6 +46,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "ccglobal/tracer.h"
+
 namespace openvdb {
 OPENVDB_USE_VERSION_NAMESPACE
 namespace OPENVDB_VERSION_NAME {
@@ -116,6 +118,7 @@ meshToVolume(
   float exteriorBandWidth = 3.0f,
   float interiorBandWidth = 3.0f, double voxel_size=1.0,
   int flags = 0, 
+  ccglobal::Tracer* tracer = nullptr,
   typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid = nullptr);
 
 
@@ -143,6 +146,7 @@ meshToVolume(
     float exteriorBandWidth = 3.0f,
     float interiorBandWidth = 3.0f, double voxel_size=1.0,
     int flags = 0,
+    ccglobal::Tracer* tracer = nullptr,
     typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid = nullptr);
 
 
@@ -3128,6 +3132,7 @@ meshToVolume(
     float exteriorBandWidth,
     float interiorBandWidth, double voxel_size,
   int flags,
+    ccglobal::Tracer* tracer,
   typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid)
 {
     using GridTypePtr = typename GridType::Ptr;
@@ -3141,7 +3146,14 @@ meshToVolume(
     using BoolTreeType = typename TreeType::template ValueConverter<bool>::Type;
 
     //////////
-
+    if (tracer)
+    {
+        tracer->progress(0.1f);
+        if (tracer->interrupt())
+        {
+            return nullptr;
+        }
+    }
     // Setup
 
     GridTypePtr distGrid(new GridType(std::numeric_limits<ValueType>::max()));
@@ -3193,6 +3205,15 @@ meshToVolume(
         indexGrid = temporaryIndexGrid.get();
     }
 
+    if (tracer)
+    {
+        tracer->progress(0.3f);
+        if (tracer->interrupt())
+        {
+            return nullptr;
+        }
+    }
+
     indexGrid->newTree();
     indexGrid->setTransform(transform.copy());
 
@@ -3223,10 +3244,30 @@ meshToVolume(
 
         tbb::parallel_for(polygonRange, Voxelizer(data, mesh, &interrupter));
 
+        int cnt = 1;
+        int counts = (data.end() - data.begin()) > 0 ? data.end() - data.begin() : 1;
         for (typename DataTable::iterator i = data.begin(); i != data.end(); ++i) {
+            if (tracer)
+            {
+                tracer->progress(1.0*cnt++ / counts);
+                if (tracer->interrupt())
+                {
+                    return nullptr;
+                }
+            }
+
             VoxelizationDataType& dataItem = **i;
             mesh_to_volume_internal::combineData(
                 distTree, indexTree, dataItem.distTree, dataItem.indexTree);
+        }
+    }
+
+    if (tracer)
+    {
+        tracer->progress(0.4f);
+        if (tracer->interrupt())
+        {
+            return nullptr;
         }
     }
 
@@ -3272,6 +3313,15 @@ meshToVolume(
         }
     }
 
+    if (tracer)
+    {
+        tracer->progress(0.6f);
+        if (tracer->interrupt())
+        {
+            return nullptr;
+        }
+    }
+
     if (interrupter.wasInterrupted(50)) return distGrid;
 
     if (distTree.activeVoxelCount() == 0) {
@@ -3301,7 +3351,14 @@ meshToVolume(
 
     if (interrupter.wasInterrupted(54)) return distGrid;
 
-
+    if (tracer)
+    {
+        tracer->progress(0.8f);
+        if (tracer->interrupt())
+        {
+            return nullptr;
+        }
+    }
     //////////
 
     // Expand the narrow band region
@@ -3332,6 +3389,15 @@ meshToVolume(
         if (estimated < double(maxIterations)) {
             maxIterations = unsigned(estimated);
             step = 40.0f / float(maxIterations);
+        }
+
+        if (tracer)
+        {
+            tracer->progress(step);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
         }
 
         std::vector<typename BoolTreeType::LeafNodeType*> maskNodes;
@@ -3365,7 +3431,14 @@ meshToVolume(
 
     if (!polygonIndexGrid) indexGrid->clear();
 
-
+    if (tracer)
+    {
+        tracer->progress(0.8f);
+        if (tracer->interrupt())
+        {
+            return nullptr;
+        }
+    }
     /////////
 
     // Renormalize distances to smooth out bumps caused by self intersecting
@@ -3400,6 +3473,14 @@ meshToVolume(
 
 
     /////////
+    if (tracer)
+    {
+        tracer->progress(0.9f);
+        if (tracer->interrupt())
+        {
+            return nullptr;
+        }
+    }
 
     // Remove active voxels that exceed the narrow band limits
 
@@ -3417,6 +3498,15 @@ meshToVolume(
             distTree, exteriorWidth, computeSignedDistanceField ? -interiorWidth : -exteriorWidth);
     }
 
+    if (tracer)
+    {
+        tracer->progress(1.0f);
+        if (tracer->interrupt())
+        {
+            return nullptr;
+        }
+    }
+
     return distGrid;
 }
 
@@ -3429,11 +3519,12 @@ meshToVolume(
     float exteriorBandWidth,
     float interiorBandWidth, double voxel_size,
   int flags,
+    ccglobal::Tracer* tracer,
   typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid)
 {
     util::NullInterrupter nullInterrupter;
     return meshToVolume<GridType>(nullInterrupter, mesh, transform,
-        exteriorBandWidth, interiorBandWidth,  voxel_size, flags, polygonIndexGrid);
+        exteriorBandWidth, interiorBandWidth,  voxel_size, flags, tracer,polygonIndexGrid);
 }
 
 

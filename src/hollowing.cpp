@@ -175,10 +175,16 @@ namespace ovdbutil
             return nullptr;
 
         if (tracer)
-            tracer->progress(0.0f);
+        {
+            tracer->progress(0.1f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
 
         //bug for param flags: hollow Optimization 
-        openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size,0xE);
+        openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size,0xE, tracer);
         
         //openvdb::FloatGrid::Ptr gridptrout1 = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size);
         //// Get the source and target grids' index space to world space transforms.
@@ -212,7 +218,13 @@ namespace ovdbutil
             return nullptr;
 
         if (tracer)
+        {
             tracer->progress(0.3f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
 
         if (closing_dist > .0) {
             gridptr = redistance_grid(*gridptr, -(offset + D), double(in_range));
@@ -225,7 +237,13 @@ namespace ovdbutil
             return nullptr;
 
         if (tracer)
+        {
             tracer->progress(0.7f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
 
         double iso_surface = D;
         double adaptivity = 0.;
@@ -285,8 +303,27 @@ namespace ovdbutil
         static const double MAX_OVERSAMPL = 8.;
         std::vector<trimesh::point>* supportPoints = new std::vector<trimesh::point>;
         double voxel_scale = parameter.voxel_size_inout_range;
+
+        if (tracer)
+        {
+            tracer->progress(0.3f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
+
         trimesh::TriMesh* meshptr = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
             parameter.closing_distance, tracer, parameter.voxel_size, parameter.fill_config, supportPoints);
+
+        if (tracer)
+        {
+            tracer->progress(0.6f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
 
         if (meshptr) {
             std::vector<trimesh::TriMesh*> meshtotalV;
@@ -317,6 +354,15 @@ namespace ovdbutil
 
         }
 
+        if (tracer)
+        {
+            tracer->progress(0.8f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
+
         if (supportPoints)
         {
             supportPoints->clear();
@@ -326,6 +372,16 @@ namespace ovdbutil
         {
             return mesh;
         }
+
+        if (tracer)
+        {
+            tracer->progress(1.0f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
+
         return meshAll;
     }
 

@@ -9,6 +9,11 @@
 #include <openvdb/tools/LevelSetRebuild.h>
 #include <openvdb/tools/GridTransformer.h>
 
+namespace ccglobal
+{
+    class Tracer;
+}
+
 namespace ovdbutil
 {
     struct Contour3D {
@@ -37,7 +42,8 @@ namespace ovdbutil
         float               exteriorBandWidth,
         float               interiorBandWidth,
         double voxel_size,
-        int                 flags = 0
+        int                 flags = 0,
+        ccglobal::Tracer* tracer =nullptr
     );
 
     trimesh::TriMesh* grid_to_mesh(const openvdb::FloatGrid& grid,

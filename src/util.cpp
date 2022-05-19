@@ -5,6 +5,8 @@
 #include <openvdb/tools/LevelSetRebuild.h>
 #include <openvdb/tools/GridTransformer.h>
 
+#include "ccglobal/tracer.h"
+
 namespace ovdbutil
 {
     inline trimesh::vec3 to_vec3f(const openvdb::Vec3s& v) { return trimesh::vec3(v.x(), v.y(), v.z()); }
@@ -77,14 +79,15 @@ namespace ovdbutil
         float               exteriorBandWidth,
         float               interiorBandWidth,
         double voxel_size,
-        int                 flags
+        int                 flags,
+        ccglobal::Tracer* tracer
     )
     {
         openvdb::initialize();
     
         openvdb::FloatGrid::Ptr grid = openvdb::tools::meshToVolume<openvdb::FloatGrid>(
             TriangleMeshDataAdapter{ *mesh }, tr, exteriorBandWidth,
-            interiorBandWidth, voxel_size, flags);
+            interiorBandWidth, voxel_size, flags, tracer);
     
         return grid;
     }
