@@ -156,7 +156,7 @@ namespace ovdbutil
         double               min_thickness,
         double               voxel_scale,
         double               closing_dist,
-        ccglobal::Tracer* tracer, double voxel_size, INNER_FILL_CONFIG fillConfig, std::vector<trimesh::vec3>* supportPoints)
+        ccglobal::Tracer* tracer, double voxel_size)
     {
         //_scale(voxel_scale, imesh);
 
@@ -243,15 +243,6 @@ namespace ovdbutil
         double iso_surface = D;
         double adaptivity = 0.;
         auto omesh = grid_to_mesh(*gridptr, iso_surface, adaptivity, false);
-
-		//填充
-  //      mesh->need_bbox();
-		//std::vector<openvdb::math::Ray<double>>* rays = new std::vector<openvdb::math::Ray<double>>;
-		//rays = generatorRay(omesh, fillConfig);
-  //      if (rays!=nullptr)
-  //      {
-  //          getHitData(gridptr, supportPoints,rays,omesh);
-  //      }
         
         //_scale(1. / voxel_scale, omesh);
         
@@ -280,7 +271,7 @@ namespace ovdbutil
         // double voxel_scale = MIN_OVERSAMPL + (MAX_OVERSAMPL - MIN_OVERSAMPL) * parameter.quality;
         double voxel_scale = parameter.voxel_size_inout_range;
         trimesh::TriMesh* meshptr = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
-                parameter.closing_distance, tracer, parameter.voxel_size, parameter.fill_config, supportPoints);
+                parameter.closing_distance, tracer, parameter.voxel_size);
 
 
         if (meshptr) {
@@ -298,7 +289,7 @@ namespace ovdbutil
         std::vector<trimesh::point>* supportPoints = new std::vector<trimesh::point>;
         double voxel_scale = parameter.voxel_size_inout_range;
         trimesh::TriMesh* hollowMesh = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
-            parameter.closing_distance, tracer, parameter.voxel_size, parameter.fill_config, supportPoints);
+            parameter.closing_distance, tracer, parameter.voxel_size);
 
         //抽壳后填充0
 		trimesh::TriMesh* outMesh = new trimesh::TriMesh();
@@ -367,7 +358,6 @@ namespace ovdbutil
                 prePoint = apair.second;
             }
 
-            vctIntersect.erase(unique(vctIntersect.begin(), vctIntersect.end()), vctIntersect.end());
             for (int n=1;n< vctIntersect.size();n+=2)
             {
 				trimesh::vec3& startPoint = (trimesh::vec3)vctIntersect.at(n-1);
@@ -375,7 +365,6 @@ namespace ovdbutil
 				float height = trimesh::distance(startPoint, endPoint) + param.min_thickness * 0.5;//param.min_thickness*0.25填充柱子伸出一点，更好的附着
 				trimesh::vec3 centerPoint((endPoint.x + startPoint.x) * 0.5, (endPoint.y + startPoint.y) * 0.5, (endPoint.z + startPoint.z) * 0.5);
 				trimesh::TriMesh* cylinderMesh = mmesh::createSoupCylinder(10, param.fill_config.fillRadius, height, centerPoint, aray.dir);
-				cylinderMesh->need_bbox();
 				vctMesh.push_back(cylinderMesh);
             }
         }
