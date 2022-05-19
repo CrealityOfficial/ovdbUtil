@@ -5,6 +5,8 @@
 #include "ccglobal/tracer.h"
 #include <openvdb/tools/RayIntersector.h>
 #include "mmesh/create/createcylinder.h"
+#include "mmesh/camera/ray.h"
+#include "mmesh/util/adjacentoctree.h"
 #include <openvdb/math/Vec3.h>
 #include <openvdb/math/Coord.h>
 namespace ovdbutil
@@ -74,31 +76,27 @@ namespace ovdbutil
 		}
     };
 
-    std::vector<openvdb::math::Ray<double>>* generatorRay(trimesh::TriMesh* amesh, INNER_FILL_CONFIG fillConfig)
+    std::vector<mmesh::Ray>* generatorRay(trimesh::TriMesh* amesh, INNER_FILL_CONFIG fillConfig, const trimesh::vec3& normal)
     {
-        if (!fillConfig.enable)
-        {
-            return nullptr;
-        }
 
-        std::vector<openvdb::math::Ray<double>>* result = new std::vector<openvdb::math::Ray<double>>;
+        std::vector<mmesh::Ray>* result = new std::vector<mmesh::Ray>;
         std::vector<trimesh::vec2> Xlines;
         std::vector<trimesh::vec2> Ylines;
 
         amesh->need_bbox();
+        float gap = fillConfig.fillRadius / fillConfig.fillratio;
         float minZ = amesh->bbox.min.z;
         float minX = amesh->bbox.min.x;
         float maxX = amesh->bbox.max.x;
+		int startX = minX / gap + 1;
+		int endX = maxX / gap;
 		float minY = amesh->bbox.min.y;
 		float maxY = amesh->bbox.max.y;
-        float gap = 20;
-
-        int startX = minX / gap + 1;
-        int endX = maxX / gap;
 		int startY = minY / gap + 1;
 		int endY = maxY / gap;
 
-        if (startX*gap - minX<gap*0.2)
+        //排除超出边界的交点
+        if (startX* gap - minX< gap *0.2)
         {
             startX++;
         }
@@ -106,7 +104,6 @@ namespace ovdbutil
         {
             endX--;
         }
-
 		if (startY * gap - minY < gap * 0.2)
 		{
 			startY++;
@@ -119,7 +116,7 @@ namespace ovdbutil
 
         for (int n=startX;n<=endX;n++)
         {
-            trimesh::vec2 pointStart(n *gap,minY);
+            trimesh::vec2 pointStart(n * gap,minY);
             trimesh::vec2 pointEnd(n * gap, maxY);
             Xlines.push_back(pointStart);
             Xlines.push_back(pointEnd);
@@ -145,16 +142,12 @@ namespace ovdbutil
             }
         }
 
-		using Vec3Type = openvdb::math::Vec3d;
-		using Vec3T = Vec3Type;
         for (trimesh::vec3& apoint :vctIntersection)
         {
-            Vec3Type eye = Vec3Type(apoint.at(0), apoint.at(1), apoint.at(2));
-            Vec3Type direction = Vec3Type(0.0, 0.0, 1.0);
-            openvdb::math::Ray<double> aRay(eye, direction);
+            //add Z 射线
+            mmesh::Ray aRay(apoint,normal);
             result->push_back(aRay);
         }
-
         return result;
     };
 
@@ -252,13 +245,13 @@ namespace ovdbutil
         auto omesh = grid_to_mesh(*gridptr, iso_surface, adaptivity, false);
 
 		//填充
-        omesh->need_bbox();
-		std::vector<openvdb::math::Ray<double>>* rays = new std::vector<openvdb::math::Ray<double>>;
-		rays = generatorRay(omesh, fillConfig);
-        if (rays!=nullptr)
-        {
-            getHitData(gridptr, supportPoints,rays,omesh);
-        }
+  //      mesh->need_bbox();
+		//std::vector<openvdb::math::Ray<double>>* rays = new std::vector<openvdb::math::Ray<double>>;
+		//rays = generatorRay(omesh, fillConfig);
+  //      if (rays!=nullptr)
+  //      {
+  //          getHitData(gridptr, supportPoints,rays,omesh);
+  //      }
         
         //_scale(1. / voxel_scale, omesh);
         
@@ -300,94 +293,96 @@ namespace ovdbutil
     OVDBUTIL_API trimesh::TriMesh* hollowMeshAndFill(trimesh::TriMesh* mesh,
         const HollowingParameter & parameter, ccglobal::Tracer* tracer)
     {
-        trimesh::TriMesh* meshAll;
         static const double MIN_OVERSAMPL = 3.;
         static const double MAX_OVERSAMPL = 8.;
         std::vector<trimesh::point>* supportPoints = new std::vector<trimesh::point>;
         double voxel_scale = parameter.voxel_size_inout_range;
-
-        if (tracer)
-        {
-            tracer->progress(0.3f);
-            if (tracer->interrupt())
-            {
-                return nullptr;
-            }
-        }
-
-        trimesh::TriMesh* meshptr = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
+        trimesh::TriMesh* hollowMesh = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
             parameter.closing_distance, tracer, parameter.voxel_size, parameter.fill_config, supportPoints);
 
-        if (tracer)
+        //抽壳后填充0
+		trimesh::TriMesh* outMesh = new trimesh::TriMesh();
+		std::vector<trimesh::TriMesh*> meshtotalV;
+		meshtotalV.push_back(mesh);
+        if (hollowMesh) 
         {
-            tracer->progress(0.6f);
-            if (tracer->interrupt())
+            meshtotalV.push_back(hollowMesh);
+            if (1)//
             {
-                return nullptr;
+				trimesh::vec3 normal(0.5, 0.0, 1.0);
+				std::vector<trimesh::TriMesh*> vctMesh = generateInfill(hollowMesh, normal, parameter);
+				for (trimesh::TriMesh* cyMesh : vctMesh)
+				{
+					meshtotalV.push_back(cyMesh);
+				}
             }
+			if (2)//
+			{
+				trimesh::vec3 normal(-0.5, 0.0, 1.0);
+				std::vector<trimesh::TriMesh*> vctMesh = generateInfill(hollowMesh, normal, parameter);
+				for (trimesh::TriMesh* cyMesh : vctMesh)
+				{
+					meshtotalV.push_back(cyMesh);
+				}
+			}
+			if (3)//
+			{
+				trimesh::vec3 normal(0.0, 0.5, 1.0);
+				std::vector<trimesh::TriMesh*> vctMesh = generateInfill(hollowMesh, normal, parameter);
+				for (trimesh::TriMesh* cyMesh : vctMesh)
+				{
+					meshtotalV.push_back(cyMesh);
+				}
+			}
         }
-
-        if (meshptr) {
-            std::vector<trimesh::TriMesh*> meshtotalV;
-            meshtotalV.push_back(mesh);
-            meshtotalV.push_back(meshptr);
-
-            meshAll = new trimesh::TriMesh;
-            trimesh::vec3 anormal(0.0, 0.0, 1.0);
-
-#if 0 
-            //TODO :for fill
-            for (int n = 1; n < supportPoints->size(); n += 2)
-            {
-                trimesh::point& pointStart = (*supportPoints)[n - 1];
-                trimesh::point& pointEnd = (*supportPoints)[n];
-
-                float fHeight = trimesh::distance(pointStart, pointEnd);
-                trimesh::TriMesh* amesh = new trimesh::TriMesh();
-                pointStart.z += (pointEnd.z - pointStart.z) * 0.5 - parameter.min_thickness * 0.5;
-                amesh = mmesh::createSoupCylinder(10, 2, fHeight, pointStart, anormal);
-                amesh->need_bbox();
-                meshtotalV.push_back(amesh);
-            }
-#endif
-            trimesh::TriMesh* hollowFilledMesh = new trimesh::TriMesh();
-            mmesh::mergeTrianglesTriMesh(hollowFilledMesh, meshtotalV);
-            mmesh::mergeTriMesh(meshAll, meshtotalV);
-
-        }
-
-        if (tracer)
-        {
-            tracer->progress(0.8f);
-            if (tracer->interrupt())
-            {
-                return nullptr;
-            }
-        }
-
-        if (supportPoints)
-        {
-            supportPoints->clear();
-            delete supportPoints;
-        }
-        if (!meshAll)
-        {
-            return mesh;
-        }
-
-        if (tracer)
-        {
-            tracer->progress(1.0f);
-            if (tracer->interrupt())
-            {
-                return nullptr;
-            }
-        }
-
-        return meshAll;
+        mmesh::mergeTriMesh(outMesh, meshtotalV);
+        return outMesh;
     }
 
-    void hollowMesh(trimesh::TriMesh* mesh,
+    OVDBUTIL_API std::vector<trimesh::TriMesh*> generateInfill(trimesh::TriMesh* mesh, const trimesh::vec3& normal, const HollowingParameter& param, ccglobal::Tracer* tracer /*= nullptr*/)
+	{
+        std::vector<trimesh::TriMesh*> vctMesh;
+        if (!param.fill_config.enable)
+        {
+            return vctMesh;
+        }
+
+        std::vector<mmesh::Ray>* rays = generatorRay(mesh, param.fill_config,normal);
+        ModelAdjacentOctree aModelAdj(mesh);
+        for (mmesh::Ray& aray :*rays)
+        {
+            std::vector<std::pair<int, trimesh::dvec3>> faceIdIntersect;
+            aModelAdj.lineCollide((trimesh::dvec3)aray.start, (trimesh::dvec3)trimesh::normalized(aray.dir), faceIdIntersect);
+
+            //过滤相同的点
+            std::vector<trimesh::dvec3> vctIntersect;
+            trimesh::dvec3 prePoint;
+            for (std::pair<int,trimesh::dvec3>& apair:faceIdIntersect)
+            {
+                if (prePoint.z == apair.second.z)
+                {
+                    continue;
+                }
+                vctIntersect.push_back(apair.second);
+                prePoint = apair.second;
+            }
+
+            vctIntersect.erase(unique(vctIntersect.begin(), vctIntersect.end()), vctIntersect.end());
+            for (int n=1;n< vctIntersect.size();n+=2)
+            {
+				trimesh::vec3& startPoint = (trimesh::vec3)vctIntersect.at(n-1);
+				trimesh::vec3& endPoint = (trimesh::vec3)vctIntersect.at(n);
+				float height = trimesh::distance(startPoint, endPoint) + param.min_thickness * 0.5;//param.min_thickness*0.25填充柱子伸出一点，更好的附着
+				trimesh::vec3 centerPoint((endPoint.x + startPoint.x) * 0.5, (endPoint.y + startPoint.y) * 0.5, (endPoint.z + startPoint.z) * 0.5);
+				trimesh::TriMesh* cylinderMesh = mmesh::createSoupCylinder(10, param.fill_config.fillRadius, height, centerPoint, aray.dir);
+				cylinderMesh->need_bbox();
+				vctMesh.push_back(cylinderMesh);
+            }
+        }
+        return vctMesh;
+	}
+
+	void hollowMesh(trimesh::TriMesh* mesh,
         const HollowingParameter& parameter, ccglobal::Tracer* tracer)
     {
 
