@@ -21,50 +21,46 @@ namespace ovdbutil
         float  out_range = param.externalWidth;
         float  in_range = param.internalWidth;
         float voxel_size = 0.05;
-        openvdb::FloatGrid::Ptr gridptr1 = ovdbutil::mesh_to_grid(mesh->m1, {}, out_range, in_range, voxel_size);
+        
+
+        openvdb::initialize();
+
+        // setup linear transform   
+        openvdb::math::Transform::Ptr xform = openvdb::math::Transform::createLinearTransform(0.25);
+
+        // CUBE 
+        std::vector<openvdb::math::Vec3s> cube_points;
+        std::vector<openvdb::math::Coord::Vec3I> cube_faces;
+        for (int i = 0; i < mesh->m1->vertices.size(); i++)
+        {
+            cube_points.push_back(openvdb::math::Vec3s(mesh->m1->vertices.at(i).x * 4, mesh->m1->vertices.at(i).y * 4, mesh->m1->vertices.at(i).z * 4));
+        }
+        for (int i = 0; i < mesh->m1->faces.size(); i++)
+        {
+            cube_faces.push_back(openvdb::math::Coord::Vec3I(mesh->m1->faces.at(i).x, mesh->m1->faces.at(i).y, mesh->m1->faces.at(i).z));
+        }
+
+        openvdb::tools::QuadAndTriangleDataAdapter<openvdb::math::Vec3s, openvdb::math::Coord::Vec3I> mesh_a(cube_points, cube_faces);
+        //openvdb::FloatGrid::Ptr gridptr;
+        openvdb::FloatGrid::Ptr gridptr1 = openvdb::tools::meshToVolume<openvdb::FloatGrid>(mesh_a, *xform);
+
+        // spherer 
+        std::vector<openvdb::math::Vec3s> s_points;
+        std::vector<openvdb::math::Coord::Vec3I> s_faces;
+        for (int i = 0; i < mesh->m2->vertices.size(); i++)
+        {
+            s_points.push_back(openvdb::math::Vec3s(mesh->m2->vertices.at(i).x * 4, mesh->m2->vertices.at(i).y * 4, mesh->m2->vertices.at(i).z * 4));
+        }
+        for (int i = 0; i < mesh->m2->faces.size(); i++)
+        {
+            s_faces.push_back(openvdb::math::Coord::Vec3I(mesh->m2->faces.at(i).x, mesh->m2->faces.at(i).y, mesh->m2->faces.at(i).z));
+        }
+
+        openvdb::tools::QuadAndTriangleDataAdapter<openvdb::math::Vec3s, openvdb::math::Coord::Vec3I> mesh_b(s_points, s_faces);
+        //openvdb::FloatGrid::Ptr gridptr;
+        openvdb::FloatGrid::Ptr gridptr2 = openvdb::tools::meshToVolume<openvdb::FloatGrid>(mesh_b, *xform);
         //openvdb::FloatGrid::Ptr gridptrout1 = mesh_to_grid(mesh->m1, {}, out_range, in_range, voxel_size);
-        openvdb::FloatGrid::Ptr gridptr2 = ovdbutil::mesh_to_grid(mesh->m2, {}, out_range, in_range, voxel_size);
-        //openvdb::FloatGrid::Ptr gridptrout2 = mesh_to_grid(mesh->m2, {}, out_range, in_range, voxel_size);
-        //// Get the source and target grids' index space to world space transforms.
-        // const openvdb::math::Transform
-        //     & sourceXform = gridptr1->transform(),
-        //     & targetXform = gridptrout1->transform();
-        // // Compute a source grid to target grid transform.
-        // // (For this example, we assume that both grids' transforms are linear,
-        // // so that they can be represented as 4 x 4 matrices.)
-        // openvdb::Mat4R xform =
-        //     sourceXform.baseMap()->getAffineMap()->getMat4() *
-        //     targetXform.baseMap()->getAffineMap()->getMat4().inverse();
-        // //for (int i=0; i< 16; i++)
-        // //    xform.asPointer()[i]= xform.asPointer()[i]*0.01;
-        // // Create the transformer.
-        // openvdb::tools::GridTransformer transformer(xform);
-        // // Resample using nearest-neighbor interpolation.
-        // transformer.transformGrid<openvdb::tools::QuadraticSampler, openvdb::FloatGrid>(
-        //     *gridptr1, *gridptrout1);
-        // // Prune the target tree for optimal sparsity.
-        // gridptrout1->tree().prune();
 
-
-        // // Get the source and target grids' index space to world space transforms.
-        // const openvdb::math::Transform
-        //     & sourceXform2 = gridptr2->transform(),
-        //     & targetXform2 = gridptrout2->transform();
-        // // Compute a source grid to target grid transform.
-        // // (For this example, we assume that both grids' transforms are linear,
-        // // so that they can be represented as 4 x 4 matrices.)
-        // openvdb::Mat4R xform2 =
-        //     sourceXform2.baseMap()->getAffineMap()->getMat4() *
-        //     targetXform2.baseMap()->getAffineMap()->getMat4().inverse();
-        // //for (int i=0; i< 16; i++)
-        // //    xform.asPointer()[i]= xform.asPointer()[i]*0.01;
-        // // Create the transformer.
-        // openvdb::tools::GridTransformer transformer2(xform2);
-        // // Resample using nearest-neighbor interpolation.
-        // transformer2.transformGrid<openvdb::tools::QuadraticSampler, openvdb::FloatGrid>(
-        //     *gridptr2, *gridptrout2);
-        // // Prune the target tree for optimal sparsity.
-        // gridptrout2->tree().prune();
 
 
         if (type==0)  openvdb::tools::csgIntersection(*gridptr1, *gridptr2);

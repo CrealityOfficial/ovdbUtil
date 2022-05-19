@@ -5,7 +5,8 @@
 #include "ccglobal/tracer.h"
 #include <openvdb/tools/RayIntersector.h>
 #include "mmesh/create/createcylinder.h"
-
+#include <openvdb/math/Vec3.h>
+#include <openvdb/math/Coord.h>
 namespace ovdbutil
 {
     openvdb::FloatGrid::Ptr redistance_grid(const openvdb::FloatGrid& grid, double iso, double er = 3.0, double ir = 3.0)
@@ -182,6 +183,7 @@ namespace ovdbutil
                 return nullptr;
             }
         }
+
 
         //bug for param flags: hollow Optimization 
         openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size,0xE, tracer);

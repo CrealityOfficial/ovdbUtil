@@ -3,7 +3,7 @@ set(OpenVDB_MINOR_VERSION 0)
 set(OpenVDB_PATCH_VERSION 1)
 set(OpenVDB_VERSION "${OpenVDB_MAJOR_VERSION}.${OpenVDB_MINOR_VERSION}.${OpenVDB_PATCH_VERSION}")
 set(OPENVDB_ABI_VERSION_NUMBER ${OpenVDB_MAJOR_VERSION})
-
+set(CMAKE_CXX_STANDARD 14) 
 include(GNUInstallDirs)
 
 if(NOT OPENVDB_NAMESPACE_SUFFIX)
@@ -49,6 +49,7 @@ list(APPEND OPENVDB_CORE_DEPENDENT_LIBS boost_iostreams)
 set(USE_ZLIB 1)
 if(USE_ZLIB)
   set(OPENVDB_USE_ZLIB 1)
+  add_definitions(-DZ_PREFIX)
 endif()
 
 __assert_target(zlib)
