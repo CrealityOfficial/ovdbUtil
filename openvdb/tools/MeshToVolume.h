@@ -3148,7 +3148,7 @@ meshToVolume(
     //////////
     if (tracer)
     {
-        tracer->progress(0.1f);
+        tracer->progress(0.20f);
         if (tracer->interrupt())
         {
             return nullptr;
@@ -3244,12 +3244,17 @@ meshToVolume(
 
         tbb::parallel_for(polygonRange, Voxelizer(data, mesh, &interrupter));
 
+        float fstep = 1.0f;
         int cnt = 1;
-        int counts = (data.end() - data.begin()) > 0 ? data.end() - data.begin() : 1;
+        int size = data.end() - data.begin();
+        if (size)
+        {
+            fstep = 0.2 / size;
+        }
         for (typename DataTable::iterator i = data.begin(); i != data.end(); ++i) {
             if (tracer)
             {
-                tracer->progress(1.0*cnt++ / counts);
+                tracer->progress(0.31f + fstep * cnt++);
                 if (tracer->interrupt())
                 {
                     return nullptr;
@@ -3259,15 +3264,6 @@ meshToVolume(
             VoxelizationDataType& dataItem = **i;
             mesh_to_volume_internal::combineData(
                 distTree, indexTree, dataItem.distTree, dataItem.indexTree);
-        }
-    }
-
-    if (tracer)
-    {
-        tracer->progress(0.4f);
-        if (tracer->interrupt())
-        {
-            return nullptr;
         }
     }
 
@@ -3353,7 +3349,7 @@ meshToVolume(
 
     if (tracer)
     {
-        tracer->progress(0.8f);
+        tracer->progress(0.65f);
         if (tracer->interrupt())
         {
             return nullptr;
@@ -3391,15 +3387,6 @@ meshToVolume(
             step = 40.0f / float(maxIterations);
         }
 
-        if (tracer)
-        {
-            tracer->progress(step);
-            if (tracer->interrupt())
-            {
-                return nullptr;
-            }
-        }
-
         std::vector<typename BoolTreeType::LeafNodeType*> maskNodes;
 
         unsigned count = 0;
@@ -3433,7 +3420,7 @@ meshToVolume(
 
     if (tracer)
     {
-        tracer->progress(0.8f);
+        tracer->progress(0.7f);
         if (tracer->interrupt())
         {
             return nullptr;
@@ -3475,7 +3462,7 @@ meshToVolume(
     /////////
     if (tracer)
     {
-        tracer->progress(0.9f);
+        tracer->progress(0.75f);
         if (tracer->interrupt())
         {
             return nullptr;
@@ -3496,15 +3483,6 @@ meshToVolume(
 
         tools::pruneLevelSet(
             distTree, exteriorWidth, computeSignedDistanceField ? -interiorWidth : -exteriorWidth);
-    }
-
-    if (tracer)
-    {
-        tracer->progress(1.0f);
-        if (tracer->interrupt())
-        {
-            return nullptr;
-        }
     }
 
     return distGrid;

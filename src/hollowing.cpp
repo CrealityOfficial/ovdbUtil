@@ -170,7 +170,7 @@ namespace ovdbutil
 
         if (tracer)
         {
-            tracer->progress(0.1f);
+            tracer->progress(0.15f);
             if (tracer->interrupt())
             {
                 return nullptr;
@@ -212,28 +212,16 @@ namespace ovdbutil
         if (tracer && tracer->interrupt())
             return nullptr;
 
-        if (tracer)
-        {
-            tracer->progress(0.3f);
-            if (tracer->interrupt())
-            {
-                return nullptr;
-            }
-        }
-
         if (closing_dist > .0) {
             gridptr = redistance_grid(*gridptr, -(offset + D), double(in_range));
         }
         else {
             D = -offset;
-        }
-        
-        if (tracer && tracer->interrupt())
-            return nullptr;
+        }   
 
         if (tracer)
         {
-            tracer->progress(0.7f);
+            tracer->progress(0.8f);
             if (tracer->interrupt())
             {
                 return nullptr;
@@ -250,7 +238,7 @@ namespace ovdbutil
             return nullptr;
 
         if (tracer)
-            tracer->progress(1.0f);
+            tracer->progress(0.95f);
         
         return omesh;
     }
@@ -284,6 +272,15 @@ namespace ovdbutil
     OVDBUTIL_API trimesh::TriMesh* hollowMeshAndFill(trimesh::TriMesh* mesh,
         const HollowingParameter & parameter, ccglobal::Tracer* tracer)
     {
+        if (tracer)
+        {
+            tracer->progress(0.1f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
+
         static const double MIN_OVERSAMPL = 3.;
         static const double MAX_OVERSAMPL = 8.;
         std::vector<trimesh::point>* supportPoints = new std::vector<trimesh::point>;
@@ -326,7 +323,17 @@ namespace ovdbutil
 				}
 			}
         }
+
         mmesh::mergeTriMesh(outMesh, meshtotalV);
+
+        if (tracer)
+        {
+            tracer->progress(1.0f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
         return outMesh;
     }
 
