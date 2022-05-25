@@ -43,9 +43,11 @@ set(OPENVDB_CORE_DEPENDENT_LIBS "")
 # always be pulled from there (we should always be using the version of TBB
 # shipped with Houdini).
 
-list(APPEND OPENVDB_CORE_DEPENDENT_LIBS tbb)
-list(APPEND OPENVDB_CORE_DEPENDENT_LIBS boost_iostreams)
-
+if(TARGET tbb)
+    list(APPEND OPENVDB_CORE_DEPENDENT_LIBS tbb)
+    add_definitions(-DUSE_TBB_MODULE)
+endif()
+    list(APPEND OPENVDB_CORE_DEPENDENT_LIBS boost_iostreams)
 set(USE_ZLIB 1)
 if(USE_ZLIB)
   set(OPENVDB_USE_ZLIB 1)
