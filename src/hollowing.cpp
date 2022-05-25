@@ -367,8 +367,8 @@ namespace ovdbutil
 
             for (int n=1;n< vctIntersect.size();n+=2)
             {
-				trimesh::vec3& startPoint = (trimesh::vec3)vctIntersect.at(n-1);
-				trimesh::vec3& endPoint = (trimesh::vec3)vctIntersect.at(n);
+                const trimesh::vec3& startPoint = (trimesh::vec3)vctIntersect.at(n-1);
+                const trimesh::vec3& endPoint = (trimesh::vec3)vctIntersect.at(n);
 				float height = trimesh::distance(startPoint, endPoint) + param.min_thickness * 0.5;//param.min_thickness*0.25填充柱子伸出一点，更好的附着
 				trimesh::vec3 centerPoint((endPoint.x + startPoint.x) * 0.5, (endPoint.y + startPoint.y) * 0.5, (endPoint.z + startPoint.z) * 0.5);
 				trimesh::TriMesh* cylinderMesh = mmesh::createSoupCylinder(10, param.fill_config.fillRadius, height, centerPoint, aray.dir);
