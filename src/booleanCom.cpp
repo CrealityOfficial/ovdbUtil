@@ -64,9 +64,10 @@ namespace ovdbutil
 
 
 
-        if (type==0)  openvdb::tools::csgIntersection(*gridptr1, *gridptr2);
-        if (type == 1)  openvdb::tools::csgUnion(*gridptr1, *gridptr2);
+        if (type==0)  openvdb::tools::csgUnion(*gridptr1, *gridptr2);
+        if (type == 1)  openvdb::tools::csgIntersection(*gridptr1, *gridptr2);
         if (type == 2)  openvdb::tools::csgDifference(*gridptr1, *gridptr2);
+        if (type == 3)  openvdb::tools::csgDifference(*gridptr1, *gridptr2);
 
         if (tracer)
             tracer->progress(0.4f);
