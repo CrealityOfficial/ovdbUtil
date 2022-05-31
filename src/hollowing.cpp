@@ -96,19 +96,19 @@ namespace ovdbutil
 		int endY = maxY / gap;
 
         //排除超出边界的交点
-        if (startX* gap - minX< gap *0.2)
+        if (startX* gap - minX< fillConfig.fillRadius*2)
         {
             startX++;
         }
-        if (maxX- endX * gap < gap * 0.2)
+        if (maxX- endX * gap < fillConfig.fillRadius * 2)
         {
             endX--;
         }
-		if (startY * gap - minY < gap * 0.2)
+		if (startY * gap - minY < fillConfig.fillRadius * 2)
 		{
 			startY++;
 		}
-		if (maxY - endY * gap < gap * 0.2)
+		if (maxY - endY * gap < fillConfig.fillRadius * 2)
 		{
 			endY--;
 		}
@@ -144,7 +144,6 @@ namespace ovdbutil
 
         for (trimesh::vec3& apoint :vctIntersection)
         {
-            //add Z 射线
             mmesh::Ray aRay(apoint,normal);
             result->push_back(aRay);
         }
@@ -354,15 +353,15 @@ namespace ovdbutil
 
             //过滤相同的点
             std::vector<trimesh::dvec3> vctIntersect;
-            trimesh::dvec3 prePoint;
             for (std::pair<int,trimesh::dvec3>& apair:faceIdIntersect)
             {
-                if (prePoint.z == apair.second.z)
+                static double preZ = apair.second.z - 1;
+                if (preZ == apair.second.z)
                 {
                     continue;
                 }
                 vctIntersect.push_back(apair.second);
-                prePoint = apair.second;
+                preZ = apair.second.z;
             }
 
             for (int n=1;n< vctIntersect.size();n+=2)
