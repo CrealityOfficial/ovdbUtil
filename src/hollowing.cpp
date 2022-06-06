@@ -282,7 +282,6 @@ namespace ovdbutil
 
         static const double MIN_OVERSAMPL = 3.;
         static const double MAX_OVERSAMPL = 8.;
-        std::vector<trimesh::point>* supportPoints = new std::vector<trimesh::point>;
         double voxel_scale = parameter.voxel_size_inout_range;
         trimesh::TriMesh* hollowMesh = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
             parameter.closing_distance, tracer, parameter.voxel_size);

@@ -17,11 +17,10 @@ namespace ovdbutil
         if (tracer)
             tracer->progress(0.0f);
 
-        float offset = 1;
         float D = 0;
         float  out_range = param.externalWidth;
         float  in_range = param.internalWidth;
-        float voxel_size = 0.05;
+        float voxel_size = 0.05f;
         
 
         openvdb::initialize();
