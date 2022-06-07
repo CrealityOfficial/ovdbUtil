@@ -290,7 +290,7 @@ namespace ovdbutil
 		trimesh::TriMesh* outMesh = new trimesh::TriMesh();
 		std::vector<trimesh::TriMesh*> meshtotalV;
 		meshtotalV.push_back(mesh);
-        if (hollowMesh) 
+        if (hollowMesh != nullptr && hollowMesh->vertices.size() > 0)
         {
             meshtotalV.push_back(hollowMesh);
             if (1)//
