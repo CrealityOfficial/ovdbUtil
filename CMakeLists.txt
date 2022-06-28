@@ -28,10 +28,6 @@ __cc_find(Trimesh2)
 __assert_target(trimesh2)
 __enable_bigobj()
 
-if(UNIX)
-  find_package(Threads REQUIRED)
-endif()
-
 # Set deps. Note that the order here is important. If we're building against
 # Houdini 17.5 or later we must include IlmBase deps first to ensure the users
 # chosen namespaced headers are correctly prioritized. Otherwise other include
@@ -58,8 +54,9 @@ __assert_target(zlib)
 
 list(APPEND OPENVDB_CORE_DEPENDENT_LIBS zlib)
 
-if(UNIX)
-  list(APPEND OPENVDB_CORE_DEPENDENT_LIBS Threads::Threads)
+if(NOT CC_BC_ANDROID)
+	find_package(Threads REQUIRED)
+	list(APPEND OPENVDB_CORE_DEPENDENT_LIBS Threads::Threads)
 endif()
 
 ##### Core library configuration
