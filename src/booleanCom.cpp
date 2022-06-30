@@ -5,9 +5,83 @@
 #include "mmesh/trimesh/trimeshutil.h"
 #include "openvdb/tools/LevelSetUtil.h"
 #include "ccglobal/tracer.h"
+#include "mmesh/create/createcylinder.h"
+
 
 namespace ovdbutil
 {
+    static trimesh::TriMesh* _voronia_boolcom(std::vector<trimesh::TriMesh>* mesh,
+        const int type, const ovdbutil::BooleanParameter& param, ccglobal::Tracer* tracer)
+    {
+        if (tracer && tracer->interrupt())
+            return nullptr;
+
+        if (tracer)
+            tracer->progress(0.0f);
+
+        //float D = 0;
+        //float  out_range = param.externalWidth;
+        //float  in_range = param.internalWidth;
+        //float voxel_size = 0.05f;
+
+
+        //openvdb::initialize();
+
+        //// setup linear transform   
+        openvdb::math::Transform::Ptr xform = openvdb::math::Transform::createLinearTransform(0.25);
+
+        openvdb::FloatGrid::Ptr grid;
+        for (trimesh::TriMesh m : *mesh) {
+
+            std::vector<openvdb::math::Vec3s> s_points;
+            std::vector<openvdb::math::Coord::Vec3I> s_faces;
+            for (int i = 0; i <m.vertices.size(); i++)
+            {
+                s_points.push_back(openvdb::math::Vec3s(m.vertices.at(i).x * 4, m.vertices.at(i).y * 4, m.vertices.at(i).z * 4));
+            }
+            for (int i = 0; i < m.faces.size(); i++)
+            {
+                s_faces.push_back(openvdb::math::Coord::Vec3I(m.faces.at(i).x, m.faces.at(i).y, m.faces.at(i).z));
+            }
+
+
+            openvdb::tools::QuadAndTriangleDataAdapter<openvdb::math::Vec3s, openvdb::math::Coord::Vec3I> mesh_b(s_points, s_faces);
+            //openvdb::FloatGrid::Ptr gridptr;
+            openvdb::FloatGrid::Ptr subgrid = openvdb::tools::meshToVolume<openvdb::FloatGrid>(mesh_b, *xform);
+
+            if (grid && subgrid) 
+                openvdb::tools::csgUnion(*grid, *subgrid);
+            else if (subgrid) 
+                grid = std::move(subgrid);
+        }
+        //if (grid) {
+        //    grid = openvdb::tools::levelSetRebuild(*grid, 0.);
+        //}
+        //else if (mesh.empty()) {
+        //    // Splitting failed, fall back to hollow the original mesh
+        //    grid = openvdb::tools::meshToVolume<openvdb::FloatGrid>(
+        //        TriangleMeshDataAdapter{ mesh }, tr, exteriorBandWidth,
+        //        interiorBandWidth, flags);
+        //}
+
+        if (tracer)
+            tracer->progress(0.4f);
+        if (!grid) {
+            if (tracer)
+                tracer->failed("Returned OpenVDB grid is NULL");
+            return nullptr;
+        }
+
+        if (tracer)
+            tracer->progress(1.0f);
+        double iso_surface = 0.;
+        double adaptivity = 0.;
+        auto omesh = ovdbutil::grid_to_mesh(*grid, iso_surface, adaptivity, false);
+
+        return omesh;
+    }
+
+
     static trimesh::TriMesh* _generate_boolcom(ovdbutil::TwoTrimesh* mesh,
         const int type, const ovdbutil::BooleanParameter& param, ccglobal::Tracer* tracer)
     {
@@ -94,7 +168,7 @@ namespace ovdbutil
 
         return omesh;
     }
-    trimesh::TriMesh* generateBoolcom(ovdbutil::TwoTrimesh* mesh,
+    trimesh::TriMesh* generateBoolcom( ovdbutil::TwoTrimesh* mesh,
         const int type,const ovdbutil::BooleanParameter& param, ccglobal::Tracer* tracer)
     {
         static const double MIN_OVERSAMPL = 3.;
@@ -102,6 +176,42 @@ namespace ovdbutil
 
 //        double voxel_scale = parameter.voxel_size_inout_range;
         trimesh::TriMesh* meshptr = _generate_boolcom(mesh, type,param,tracer);
+
+        if (meshptr) {
+            mmesh::reverseTriMesh(meshptr);
+        }
+
+        return meshptr;
+    }
+    trimesh::TriMesh* voroniaBoolcomInputLines(std::vector<edge> *edges)
+    {
+        trimesh::TriMesh* outMesh = new trimesh::TriMesh();
+        std::vector<trimesh::TriMesh> resuMerge;
+        for (int i = 0; i < edges->size(); i++)
+        {
+            trimesh::vec3 centerPoint0(edges->at(i).p0);
+            trimesh::vec3 centerPoint1(edges->at(i).p1);
+            trimesh::vec3 vmiddle = (centerPoint0 + centerPoint1) / 2;
+            trimesh::vec3 v0(centerPoint1 - centerPoint0);
+            float len = trimesh::dist(centerPoint0, centerPoint1);
+            len += 1.0;
+            trimesh::TriMesh* symesh = mmesh:: createSoupCylinder(10, 1.6, len, vmiddle, v0);
+            resuMerge.emplace_back(*symesh);
+        }
+        ovdbutil::BooleanParameter param;
+        ccglobal::Tracer* tracer = nullptr;
+        const int typeUnion = 0;
+        return voroniaBoolcom(&resuMerge, 0, param, tracer);
+    
+    }
+    trimesh::TriMesh* voroniaBoolcom(std::vector<trimesh::TriMesh>* mesh,
+        const int type, const ovdbutil::BooleanParameter& param, ccglobal::Tracer* tracer)
+    {
+        static const double MIN_OVERSAMPL = 3.;
+        static const double MAX_OVERSAMPL = 8.;
+
+        //        double voxel_scale = parameter.voxel_size_inout_range;
+        trimesh::TriMesh* meshptr = _voronia_boolcom(mesh, type, param, tracer);
 
         if (meshptr) {
             mmesh::reverseTriMesh(meshptr);
