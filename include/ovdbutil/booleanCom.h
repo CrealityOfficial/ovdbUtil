@@ -31,7 +31,7 @@ namespace ovdbutil
     OVDBUTIL_API trimesh::TriMesh* generateDilationcom(trimesh::TriMesh* mesh, const int param, ccglobal::Tracer* tracer = nullptr);
     OVDBUTIL_API trimesh::TriMesh* generateErosioncom(trimesh::TriMesh* mesh, const int param, ccglobal::Tracer* tracer = nullptr);
     OVDBUTIL_API trimesh::TriMesh* voroniaBoolcom(std::vector<trimesh::TriMesh>* mesh, const int type, const ovdbutil::BooleanParameter& param, ccglobal::Tracer* tracer=nullptr);
-    OVDBUTIL_API trimesh::TriMesh* voroniaBoolcomInputLines(std::vector<edge> *edges);
+    OVDBUTIL_API trimesh::TriMesh* voroniaBoolcomInputLines(std::vector<edge> &edges);
 }
 
 #endif // OVDBUTIL_HOLLOWING_1650957593077_H

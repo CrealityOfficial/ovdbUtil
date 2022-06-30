@@ -183,14 +183,14 @@ namespace ovdbutil
 
         return meshptr;
     }
-    trimesh::TriMesh* voroniaBoolcomInputLines(std::vector<edge> *edges)
+    trimesh::TriMesh* voroniaBoolcomInputLines(std::vector<edge> &edges)
     {
         trimesh::TriMesh* outMesh = new trimesh::TriMesh();
         std::vector<trimesh::TriMesh> resuMerge;
-        for (int i = 0; i < edges->size(); i++)
+        for (int i = 0; i < edges.size(); i++)
         {
-            trimesh::vec3 centerPoint0(edges->at(i).p0);
-            trimesh::vec3 centerPoint1(edges->at(i).p1);
+            trimesh::vec3 centerPoint0(edges.at(i).p0);
+            trimesh::vec3 centerPoint1(edges.at(i).p1);
             trimesh::vec3 vmiddle = (centerPoint0 + centerPoint1) / 2;
             trimesh::vec3 v0(centerPoint1 - centerPoint0);
             float len = trimesh::dist(centerPoint0, centerPoint1);
