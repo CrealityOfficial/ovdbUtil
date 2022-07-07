@@ -3,12 +3,12 @@
 #include "util.h"
 #include "mmesh/trimesh/trimeshutil.h"
 #include "ccglobal/tracer.h"
-#include <openvdb/tools/RayIntersector.h>
 #include "mmesh/create/createcylinder.h"
 #include "mmesh/camera/ray.h"
 #include "mmesh/util/adjacentoctree.h"
 #include <openvdb/math/Vec3.h>
 #include <openvdb/math/Coord.h>
+
 namespace ovdbutil
 {
     openvdb::FloatGrid::Ptr redistance_grid(const openvdb::FloatGrid& grid, double iso, double er = 3.0, double ir = 3.0)
@@ -36,45 +36,6 @@ namespace ovdbutil
 		double k = fArea(p1, p2, p3) / fArea(p1, p2, p4);
 		return trimesh::vec2((p3.x + k * p4.x) / (1 + k), (p3.y + k * p4.y) / (1 + k));
 	}
-
-    void getHitData(openvdb::FloatGrid::Ptr gridptr, std::vector<trimesh::vec3>* supportPoints, std::vector<openvdb::math::Ray<double>>* rays,trimesh::TriMesh* omesh)
-    {
-
-		openvdb::OPENVDB_VERSION_NAME::tools::VolumeRayIntersector<openvdb::FloatGrid> aRayIntersector(*gridptr);
-		for (openvdb::math::Ray<double>& aRay : *rays)
-		{
-			aRayIntersector.setIndexRay(aRay);
-			std::list<openvdb::OPENVDB_VERSION_NAME::math::Ray<double>::TimeSpan> alist;
-			aRayIntersector.hits(alist);
-
-			openvdb::math::Vec3d cPointMin(omesh->bbox.max.x + 10, omesh->bbox.max.y + 10, omesh->bbox.max.z + 10);
-			openvdb::math::Vec3d cPointMax(omesh->bbox.min.x - 10, omesh->bbox.min.y - 10, omesh->bbox.min.z - 10);
-			for (openvdb::OPENVDB_VERSION_NAME::math::Ray<double>::TimeSpan atime : alist)
-			{
-				openvdb::math::Vec3d cPoint0 = aRayIntersector.getIndexPos(atime.t0);
-				openvdb::math::Vec3d cPoint1 = aRayIntersector.getIndexPos(atime.t1);
-				if (cPoint0[2] < cPointMin[2])
-				{
-					cPointMin = cPoint0;
-				}
-				if (cPoint1[2] < cPointMin[2])
-				{
-					cPointMin = cPoint1;
-				}
-				if (cPoint0[2] > cPointMax[2])
-				{
-					cPointMax = cPoint0;
-				}
-				if (cPoint1[2] > cPointMax[2])
-				{
-					cPointMax = cPoint1;
-				}
-
-			}
-			supportPoints->push_back(trimesh::vec3(cPointMin[0], cPointMin[1], cPointMin[2]));
-			supportPoints->push_back(trimesh::vec3(cPointMax[0], cPointMax[1], cPointMax[2]));
-		}
-    };
 
     std::vector<mmesh::Ray>* generatorRay(trimesh::TriMesh* amesh, INNER_FILL_CONFIG fillConfig, const trimesh::vec3& normal)
     {

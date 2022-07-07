@@ -1,6 +1,7 @@
 #include "ovdbutil/booleanCom.h"
 #include "openvdb/tools/TopologyToLevelSet.h"
 #include "openvdb/tools/Morphology.h"
+#include <openvdb/tools/Composite.h>
 #include "util.h"
 #include "mmesh/trimesh/trimeshutil.h"
 #include "openvdb/tools/LevelSetUtil.h"

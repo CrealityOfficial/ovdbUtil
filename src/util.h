@@ -5,7 +5,6 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/tools/VolumeToMesh.h>
-#include <openvdb/tools/Composite.h>
 #include <openvdb/tools/LevelSetRebuild.h>
 #include <openvdb/tools/GridTransformer.h>
 

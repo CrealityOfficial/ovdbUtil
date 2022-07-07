@@ -277,7 +277,7 @@ if(MINGW)
   list(APPEND OPENVDB_CORE_PUBLIC_DEFINES -D_USE_MATH_DEFINES)
 endif()
 
-set(SRCS ${OPENVDB_LIBRARY_THREAD_INCLUDE_FILES}
+set(OVDB_SRCS ${OPENVDB_LIBRARY_THREAD_INCLUDE_FILES}
 		 ${OPENVDB_LIBRARY_UTIL_INCLUDE_FILES}
 		 ${OPENVDB_LIBRARY_TREE_INCLUDE_FILES}
 		 ${OPENVDB_LIBRARY_TOOLS_INCLUDE_FILES}
@@ -291,19 +291,31 @@ set(INCS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 set(DEFS ${OPENVDB_CORE_PRIVATE_DEFINES} OPENVDB_STATIC OPENVDB_STATICLIB)
 set(LIBS ${OPENVDB_CORE_DEPENDENT_LIBS})
 
-list(APPEND SRCS include/ovdbutil/interface.h
+__add_real_target(openvdb lib SOURCE ${OVDB_SRCS}
+							  INC ${INCS}
+							  DEF ${DEFS}
+							  LIB ${LIBS}
+							  INTERFACE ${INCS}
+							  )
+			
+			
+set(SRCS include/ovdbutil/interface.h
 		 include/ovdbutil/init.h
 		 include/ovdbutil/hollowing.h
-		 include/ovdbutil/booleanCom.h
 		 src/init.cpp
 		 src/hollowing.cpp
-		 src/booleanCom.cpp
 		 src/util.h
 		 src/util.cpp
 		 )
+
+if(HAVE_OVDBUTIL_BOOLEAN)
+	list(APPEND SRC include/ovdbutil/booleanCom.h
+					src/booleanCom.cpp
+					)
+endif()
 		
 list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-list(APPEND LIBS trimesh2 mmesh boost_iostreams tbb)
+list(APPEND LIBS trimesh2 mmesh boost_iostreams tbb openvdb)
 
 __add_common_library(ovdbutil)
 
