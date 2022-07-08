@@ -2698,6 +2698,7 @@ public:
     void setFirstMap(const FirstMapType& first) { mFirstMap = first; updateAffineMatrix(); }
     void setSecondMap(const SecondMapType& second) { mSecondMap = second; updateAffineMatrix(); }
 
+#if !_STRINK_OPENVDB
     void read(std::istream& is)
     {
         mAffineMap.read(is);
@@ -2710,6 +2711,7 @@ public:
         mFirstMap.write(os);
         mSecondMap.write(os);
     }
+#endif // _STRINK_OPENVDB
 
 private:
     void updateAffineMatrix()

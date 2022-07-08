@@ -206,7 +206,7 @@ public:
     void readBuffers(std::istream& is, const CoordBBox&, bool fromHalf = false);
     /// Write out the topology and the origin.
     void writeBuffers(std::ostream&, bool toHalf = false) const;
-#endif !_STRINK_OPENVDB
+#endif //!_STRINK_OPENVDB
 
     //
     // Accessor methods
@@ -1062,7 +1062,7 @@ LeafNode<bool, Log2Dim>::writeBuffers(std::ostream& os, bool /*toHalf*/) const
     mBuffer.mData.save(os);
 }
 
-#endif !_STRINK_OPENVDB
+#endif //!_STRINK_OPENVDB
 ////////////////////////////////////////
 
 

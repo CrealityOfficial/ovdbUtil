@@ -973,7 +973,7 @@ tools::minMax(grid->tree()). Use threaded = false for serial execution")
     /// @sa HasMultiPassIO
     static inline bool hasMultiPassIO();
 
-#endif !_STRINK_OPENVDB
+#endif //!_STRINK_OPENVDB
 
     /// @name Registry
     /// @{
