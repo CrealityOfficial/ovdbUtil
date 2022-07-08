@@ -447,6 +447,7 @@ public:
     /// @}
 
 
+#if !_STRINK_OPENVDB
     /// @name I/O
     /// @{
 
@@ -479,7 +480,7 @@ public:
     virtual void print(std::ostream& = std::cout, int verboseLevel = 1) const = 0;
 
     /// @}
-
+#endif // _STRINK_OPENVDB
 
 protected:
     /// @brief Initialize with an identity linear transform.
@@ -939,7 +940,7 @@ tools::minMax(grid->tree()). Use threaded = false for serial execution")
 
     /// @}
 
-
+#if !_STRINK_OPENVDB
     /// @name I/O
     /// @{
 
@@ -965,7 +966,6 @@ tools::minMax(grid->tree()). Use threaded = false for serial execution")
 
     /// Output a human-readable description of this grid.
     void print(std::ostream& = std::cout, int verboseLevel = 1) const override;
-
     /// @}
 
     /// @brief Return @c true if grids of this type require multiple I/O passes
@@ -973,6 +973,7 @@ tools::minMax(grid->tree()). Use threaded = false for serial execution")
     /// @sa HasMultiPassIO
     static inline bool hasMultiPassIO();
 
+#endif !_STRINK_OPENVDB
 
     /// @name Registry
     /// @{
@@ -1599,6 +1600,7 @@ Grid<TreeT>::evalActiveVoxelDim() const
 }
 
 
+#if !_STRINK_OPENVDB
 ////////////////////////////////////////
 
 
@@ -1736,7 +1738,7 @@ Grid<TreeT>::print(std::ostream& os, int verboseLevel) const
 
 
 ////////////////////////////////////////
-
+#endif // _STRINK_OPENVDB
 
 template<typename GridType>
 inline typename GridType::Ptr

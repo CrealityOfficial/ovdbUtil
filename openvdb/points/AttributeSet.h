@@ -244,6 +244,7 @@ public:
     /// unless @a allowMismatchingDescriptors is true (default is false)
     void resetDescriptor(const DescriptorPtr& replacement, const bool allowMismatchingDescriptors = false);
 
+#if !_STRINK_OPENVDB
     /// Read the entire set from a stream.
     void read(std::istream&);
     /// Write the entire set to a stream.
@@ -268,7 +269,7 @@ public:
     /// This will write the attribute data to a stream.
     /// @param outputTransient if true, write out transient attributes
     void writeAttributes(std::ostream&, bool outputTransient = false) const;
-
+#endif // _STRINK_OPENVDB
     /// Compare the descriptors and attribute arrays on the attribute sets
     /// Exit early if the descriptors do not match
     bool operator==(const AttributeSet& other) const;

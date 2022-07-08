@@ -1110,6 +1110,7 @@ template<typename BoxType>
 void
 doReadGrid(GridBase::Ptr grid, const GridDescriptor& gd, std::istream& is, const BoxType& bbox)
 {
+#if !_STRINK_OPENVDB
     struct Local {
         static void readBuffers(GridBase& g, std::istream& istrm, NoBBox) { g.readBuffers(istrm); }
         static void readBuffers(GridBase& g, std::istream& istrm, const CoordBBox& indexBBox) {
@@ -1201,6 +1202,7 @@ doReadGrid(GridBase::Ptr grid, const GridDescriptor& gd, std::istream& is, const
             grid->setName(gd.gridName());
         }
     }
+#endif // _STRINK_OPENVDB
 }
 
 } // unnamed namespace
@@ -1345,6 +1347,7 @@ void
 Archive::writeGrid(GridDescriptor& gd, GridBase::ConstPtr grid,
     std::ostream& os, bool seekable) const
 {
+#if !_STRINK_OPENVDB
     // Restore file-level stream metadata on exit.
     struct OnExit {
         OnExit(std::ios_base& strm_): strm(&strm_), ptr(strm_.pword(sStreamState.metadata)) {}
@@ -1424,6 +1427,7 @@ Archive::writeGrid(GridDescriptor& gd, GridBase::ConstPtr grid,
         // Now seek back to the end.
         gd.seekToEnd(os);
     }
+#endif // _SHRINK_OPENVDB
 }
 
 
@@ -1431,6 +1435,7 @@ void
 Archive::writeGridInstance(GridDescriptor& gd, GridBase::ConstPtr grid,
     std::ostream& os, bool seekable) const
 {
+#if !_STRINK_OPENVDB
     // Write out the Descriptor's header information (grid name, type
     // and instance parent name).
     gd.writeHeader(os);
@@ -1465,6 +1470,7 @@ Archive::writeGridInstance(GridDescriptor& gd, GridBase::ConstPtr grid,
         // Now seek back to the end.
         gd.seekToEnd(os);
     }
+#endif // _STRINK_OPENVDB
 }
 
 } // namespace io

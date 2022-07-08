@@ -183,11 +183,12 @@ public:
     virtual Vec3d voxelSize() const = 0;
     virtual Vec3d voxelSize(const Vec3d&) const = 0;
     //@}
-
+#if !_STRINK_OPENVDB
     virtual void read(std::istream&) = 0;
     virtual void write(std::ostream&) const = 0;
 
     virtual std::string str() const = 0;
+#endif //_STRINK_OPENVDB
 
     virtual MapBase::Ptr copy() const = 0;
 
@@ -537,7 +538,7 @@ public:
     }
     //@}
 
-
+#if !_STRINK_OPENVDB
     /// read serialization
     void read(std::istream& is) override { mMatrix.read(is); updateAcceleration(); }
     /// write serialization
@@ -550,6 +551,7 @@ public:
         buffer << " - voxel dimensions: " << mVoxelSize << std::endl;
         return buffer.str();
     }
+#endif //_STRINK_OPENVDB
 
     /// on-demand decomposition of the affine map
     SharedPtr<FullyDecomposedMap> createDecomposedMap()
@@ -823,6 +825,7 @@ public:
     Vec3d voxelSize(const Vec3d&) const OPENVDB_MAP_FUNC_SPECIFIER { return voxelSize(); }
     //@}
 
+#if !_STRINK_OPENVDB
     /// read serialization
     void read(std::istream& is) override
     {
@@ -849,6 +852,7 @@ public:
         buffer << " - voxel dimensions: " << mVoxelSize << std::endl;
         return buffer.str();
     }
+#endif // _STRINK_OPENVDB
 
     bool isEqual(const MapBase& other) const override { return isEqualBase(*this, other); }
 
@@ -1079,7 +1083,7 @@ public:
 
     /// Return the translation vector
     const Vec3d& getTranslation() const { return mTranslation; }
-
+#if !_STRINK_OPENVDB
     /// read serialization
     void read(std::istream& is) override { mTranslation.read(is); }
     /// write serialization
@@ -1091,7 +1095,7 @@ public:
         buffer << " - translation: " << mTranslation << std::endl;
         return buffer.str();
     }
-
+#endif // _STRINK_OPENVDB
     bool isEqual(const MapBase& other) const override { return isEqualBase(*this, other); }
 
     bool operator==(const TranslationMap& other) const
@@ -1361,7 +1365,7 @@ public:
     const Vec3d& getInvTwiceScale() const {return mInvTwiceScale;}
     /// Return 1/(scale)
     const Vec3d& getInvScale() const {return mScaleValuesInverse; }
-
+#if !_STRINK_OPENVDB
     /// read serialization
     void read(std::istream& is) override
     {
@@ -1391,7 +1395,7 @@ public:
         buffer << " - voxel dimensions: " << mVoxelSize << std::endl;
         return buffer.str();
     }
-
+#endif // _STRINK_OPENVDB
     bool isEqual(const MapBase& other) const override { return isEqualBase(*this, other); }
 
     bool operator==(const ScaleTranslateMap& other) const
@@ -1803,6 +1807,7 @@ public:
     Vec3d voxelSize(const Vec3d&) const override { return voxelSize();}
     /// @}
 
+#if !_STRINK_OPENVDB
     /// read serialization
     void read(std::istream& is) override
     {
@@ -1821,6 +1826,8 @@ public:
         buffer << mAffineMap.str();
         return buffer.str();
     }
+#endif // _STRINK_OPENVDB
+
     /// Return AffineMap::Ptr to an AffineMap equivalent to *this
     AffineMap::Ptr getAffineMap() const override {
         return AffineMap::Ptr(new AffineMap(mAffineMap));
@@ -2390,6 +2397,7 @@ public:
     /// Return @c true if the second map is a uniform scale, Rotation and translation
     bool hasSimpleAffine() const { return mHasSimpleAffine; }
 
+#if !_STRINK_OPENVDB
     /// read serialization
     void read(std::istream& is) override
     {
@@ -2441,6 +2449,7 @@ public:
         buffer << mSecondMap.str() << std::endl;
         return buffer.str();
     }
+#endif //_STRINK_OPENVDB
 
     /// @brief Return a MapBase::Ptr to a new map that is the result
     /// of prepending the given rotation to the linear part of this map

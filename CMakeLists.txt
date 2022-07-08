@@ -75,32 +75,38 @@ configure_file(openvdb/version.h.in openvdb/version.h)
 
 set(OPENVDB_LIBRARY_SOURCE_FILES
   openvdb/Grid.cc
-  openvdb/io/Archive.cc
-  openvdb/io/Compression.cc
-  openvdb/io/DelayedLoadMetadata.cc
-  openvdb/io/File.cc
-  openvdb/io/GridDescriptor.cc
-  openvdb/io/Queue.cc
-  openvdb/io/Stream.cc
-  openvdb/io/TempFile.cc
   openvdb/math/Half.cc
   openvdb/math/Maps.cc
   openvdb/math/Proximity.cc
-  openvdb/math/QuantizedUnitVec.cc
   openvdb/math/Transform.cc
+  openvdb/math/QuantizedUnitVec.cc
   openvdb/Metadata.cc
   openvdb/MetaMap.cc
   openvdb/openvdb.cc
+  openvdb/io/Archive.cc
+  openvdb/io/Compression.cc
+  openvdb/io/GridDescriptor.cc
+  openvdb/io/DelayedLoadMetadata.cc
   openvdb/Platform.cc
   openvdb/points/AttributeArray.cc
   openvdb/points/AttributeArrayString.cc
   openvdb/points/AttributeGroup.cc
   openvdb/points/AttributeSet.cc
-  openvdb/points/StreamCompression.cc
   openvdb/points/points.cc
+  openvdb/points/StreamCompression.cc
   openvdb/util/Formats.cc
   openvdb/util/Util.cc
 )
+
+if(NOT SHRINK_OPENVDB)
+	list(APPEND OPENVDB_LIBRARY_SOURCE_FILES
+		openvdb/Grid.cc
+		openvdb/io/File.cc
+		openvdb/io/Queue.cc
+		openvdb/io/Stream.cc
+		openvdb/io/TempFile.cc
+		)
+endif()
 
 set(OPENVDB_LIBRARY_INCLUDE_FILES
   openvdb/Exceptions.h
@@ -271,10 +277,14 @@ set(OPENVDB_LIBRARY_THREAD_INCLUDE_FILES
 # Configure (static and shared lib) C flags
 
 # Private defines (not inherited by dependent projects)
-list(APPEND OPENVDB_CORE_PRIVATE_DEFINES -DOPENVDB_PRIVATE)
+list(APPEND OPENVDB_CORE_PRIVATE_DEFINES OPENVDB_PRIVATE)
+
+if(SHRINK_OPENVDB)
+	list(APPEND OPENVDB_CORE_PRIVATE_DEFINES _STRINK_OPENVDB)
+endif()
 
 if(MINGW)
-  list(APPEND OPENVDB_CORE_PUBLIC_DEFINES -D_USE_MATH_DEFINES)
+  list(APPEND OPENVDB_CORE_PRIVATE_DEFINES _USE_MATH_DEFINES)
 endif()
 
 set(OVDB_SRCS ${OPENVDB_LIBRARY_THREAD_INCLUDE_FILES}

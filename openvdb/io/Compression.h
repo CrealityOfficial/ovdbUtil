@@ -447,7 +447,6 @@ struct HalfWriter</*IsReal=*/true, double> {
 
 ////////////////////////////////////////
 
-
 /// Populate the given buffer with @a destCount values of type @c ValueT
 /// read from the given stream, taking into account that the stream might
 /// have been compressed via one of several supported schemes.

@@ -461,7 +461,7 @@ AttributeSet::resetDescriptor(const DescriptorPtr& replacement, const bool allow
     mDescr = replacement;
 }
 
-
+#if !_STRINK_OPENVDB
 void
 AttributeSet::read(std::istream& is)
 {
@@ -556,7 +556,7 @@ AttributeSet::writeAttributes(std::ostream& os, bool outputTransient) const
         attr->writeBuffers(os, outputTransient);
     }
 }
-
+#endif // _STRINK_OPENVDB
 
 bool
 AttributeSet::operator==(const AttributeSet& other) const {

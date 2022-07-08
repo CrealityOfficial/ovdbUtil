@@ -131,7 +131,7 @@ public:
     /// Return the total amount of memory in bytes occupied by this tree.
     virtual Index64 memUsage() const { return 0; }
 
-
+#if !_STRINK_OPENVDB
     //
     // I/O methods
     //
@@ -165,6 +165,7 @@ public:
     ///                      4: include minimum and maximum voxel values
     /// @warning @a verboseLevel 4 forces loading of any unallocated nodes.
     virtual void print(std::ostream& os = std::cout, int verboseLevel = 1) const;
+#endif // _STRINK_OPENVDB
 };
 
 
@@ -299,7 +300,7 @@ public:
     /// @note Because RootNodes are resizable, the RootNode Log2Dim is 0 for all trees.
     static void getNodeLog2Dims(std::vector<Index>& dims);
 
-
+#if !_STRINK_OPENVDB
     //
     // I/O methods
     //
@@ -325,7 +326,7 @@ public:
     void writeBuffers(std::ostream&, bool saveFloatAsHalf = false) const override;
 
     void print(std::ostream& os = std::cout, int verboseLevel = 1) const override;
-
+#endif //_STRINK_OPENVDB
 
     //
     // Statistics
@@ -1118,7 +1119,7 @@ struct Tree5 {
 
 
 ////////////////////////////////////////
-
+#if !_STRINK_OPENVDB
 
 inline void
 TreeBase::readTopology(std::istream& is, bool /*saveFloatAsHalf*/)
@@ -1147,7 +1148,7 @@ TreeBase::print(std::ostream& os, int /*verboseLevel*/) const
        << "    Leaf Node Count: " << leafCount() << std::endl
        << "    Non-leaf Node Count: " << nonLeafCount() << std::endl;
 }
-
+#endif // _STRINK_OPENVDB
 
 ////////////////////////////////////////
 
@@ -1256,7 +1257,7 @@ Tree<RootNodeType>::cbegin() const
 
 
 ////////////////////////////////////////
-
+#if !_STRINK_OPENVDB
 
 template<typename RootNodeType>
 void
@@ -1312,7 +1313,7 @@ Tree<RootNodeType>::writeBuffers(std::ostream &os, bool saveFloatAsHalf) const
 {
     mRoot.writeBuffers(os, saveFloatAsHalf);
 }
-
+#endif // _STRINK_OPENVDB
 
 template<typename RootNodeType>
 inline void
@@ -1334,7 +1335,6 @@ Tree<RootNodeType>::clear()
 
     this->clearAllAccessors();
 }
-
 
 ////////////////////////////////////////
 
@@ -2046,7 +2046,7 @@ Tree<RootNodeType>::getNodeLog2Dims(std::vector<Index>& dims)
     RootNodeType::getNodeLog2Dims(dims);
 }
 
-
+#if !_STRINK_OPENVDB
 template<typename RootNodeType>
 inline void
 Tree<RootNodeType>::print(std::ostream& os, int verboseLevel) const
@@ -2191,7 +2191,7 @@ Tree<RootNodeType>::print(std::ostream& os, int verboseLevel) const
            << "% of actual footprint\n";
     }
 }
-
+#endif //_STRINK_OPENVDB
 } // namespace tree
 } // namespace OPENVDB_VERSION_NAME
 } // namespace openvdb

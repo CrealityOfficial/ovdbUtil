@@ -569,7 +569,7 @@ public:
     template<typename DenseT>
     void copyToDense(const CoordBBox& bbox, DenseT& dense) const;
 
-
+#if !_STRINK_OPENVDB
     //
     // I/O
     //
@@ -579,7 +579,7 @@ public:
     void writeBuffers(std::ostream&, bool toHalf = false) const;
     void readBuffers(std::istream&, bool fromHalf = false);
     void readBuffers(std::istream&, const CoordBBox&, bool fromHalf = false);
-
+#endif // !_STRINK_OPENVDB
 
     //
     // Voxel access
@@ -2281,7 +2281,7 @@ RootNode<ChildT>::copyToDense(const CoordBBox& bbox, DenseT& dense) const
 }
 
 ////////////////////////////////////////
-
+#if !_STRINK_OPENVDB
 
 template<typename ChildT>
 inline bool
@@ -2465,7 +2465,7 @@ RootNode<ChildT>::readBuffers(std::istream& is, const CoordBBox& clipBBox, bool 
     this->clip(clipBBox);
 }
 
-
+#endif /// !_STRINK_OPENVDB
 ////////////////////////////////////////
 
 

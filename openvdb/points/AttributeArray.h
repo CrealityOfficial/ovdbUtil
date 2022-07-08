@@ -305,6 +305,7 @@ public:
     /// @brief Retrieve the attribute array flags
     uint8_t flags() const { return mFlags; }
 
+#if !_STRINK_OPENVDB
     /// Read attribute metadata and buffers from a stream.
     virtual void read(std::istream&) = 0;
     /// Write attribute metadata and buffers to a stream.
@@ -331,6 +332,7 @@ public:
     /// Write attribute buffers to a paged stream.
     /// @param outputTransient if true, write out transient attributes
     virtual void writePagedBuffers(compression::PagedOutputStream&, bool outputTransient) const = 0;
+#endif // _STRINK_OPENVDB
 
     /// Ensures all data is in-core
     virtual void loadData() const = 0;
@@ -704,6 +706,7 @@ public:
     OPENVDB_DEPRECATED_MESSAGE("Previously this uncompressed the attribute array, now it does nothing")
     bool decompress() override;
 
+#if !_STRINK_OPENVDB
     /// Read attribute data from a stream.
     void read(std::istream&) override;
     /// Write attribute data to a stream.
@@ -734,6 +737,7 @@ public:
     /// @param os              the output stream
     /// @param outputTransient if true, write out transient attributes
     void writePagedBuffers(compression::PagedOutputStream& os, bool outputTransient) const override;
+#endif //_STRINK_OPENVDB
 
     /// Return @c true if this buffer's values have not yet been read from disk.
     inline bool isOutOfCore() const;
@@ -1655,6 +1659,7 @@ TypedAttributeArray<ValueType_, Codec_>::isDataLoaded() const
     return !this->isOutOfCore();
 }
 
+#if !_STRINK_OPENVDB
 
 template<typename ValueType_, typename Codec_>
 void
@@ -1940,6 +1945,7 @@ TypedAttributeArray<ValueType_, Codec_>::writePagedBuffers(compression::PagedOut
     os.write(reinterpret_cast<const char*>(this->data()), this->arrayMemUsage());
 }
 
+#endif // _STRINK_OPENVDB
 
 template<typename ValueType_, typename Codec_>
 void

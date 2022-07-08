@@ -36,6 +36,7 @@ namespace openvdb {
 OPENVDB_USE_VERSION_NAMESPACE
 namespace OPENVDB_VERSION_NAME {
 
+#if !_STRINK_OPENVDB
 namespace io
 {
 
@@ -163,7 +164,7 @@ writeCompressedValuesSize(std::ostream& os, const T* srcBuf, Index srcCount)
 }
 
 } // namespace io
-
+#endif // _STRINK_OPENVDB
 
 // forward declaration
 namespace tree {
@@ -490,6 +491,7 @@ public:
     }
     //@}
 
+#if !_STRINK_OPENVDB
     // I/O methods
 
     void readTopology(std::istream& is, bool fromHalf = false);
@@ -500,7 +502,7 @@ public:
     void readBuffers(std::istream& is, bool fromHalf = false);
     void readBuffers(std::istream& is, const CoordBBox&, bool fromHalf = false);
     void writeBuffers(std::ostream& os, bool toHalf = false) const;
-
+#endif //_STRINK_OPENVDB
 
     Index64 memUsage() const;
 
@@ -1114,6 +1116,7 @@ PointDataLeafNode<T, Log2Dim>::setOffsetOnly(Index offset, const ValueType& val)
     this->buffer().setValue(offset, val);
 }
 
+#if !_STRINK_OPENVDB
 template<typename T, Index Log2Dim>
 inline void
 PointDataLeafNode<T, Log2Dim>::readTopology(std::istream& is, bool fromHalf)
@@ -1512,6 +1515,7 @@ PointDataLeafNode<T, Log2Dim>::writeBuffers(std::ostream& os, bool toHalf) const
         Local::destroyPagedStream(meta->auxData(), attributeIndex);
     }
 }
+#endif //SHRINK_OPENVDB
 
 template<typename T, Index Log2Dim>
 inline Index64

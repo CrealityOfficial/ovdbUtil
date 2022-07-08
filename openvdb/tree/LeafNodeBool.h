@@ -192,6 +192,7 @@ public:
     const Buffer& buffer() const { return mBuffer; }
     Buffer& buffer() { return mBuffer; }
 
+#if !_STRINK_OPENVDB
     //
     // I/O methods
     //
@@ -205,6 +206,7 @@ public:
     void readBuffers(std::istream& is, const CoordBBox&, bool fromHalf = false);
     /// Write out the topology and the origin.
     void writeBuffers(std::ostream&, bool toHalf = false) const;
+#endif !_STRINK_OPENVDB
 
     //
     // Accessor methods
@@ -971,7 +973,7 @@ LeafNode<bool, Log2Dim>::offsetToGlobalCoord(Index n) const
 
 
 ////////////////////////////////////////
-
+#if !_STRINK_OPENVDB
 
 template<Index Log2Dim>
 inline void
@@ -1060,7 +1062,7 @@ LeafNode<bool, Log2Dim>::writeBuffers(std::ostream& os, bool /*toHalf*/) const
     mBuffer.mData.save(os);
 }
 
-
+#endif !_STRINK_OPENVDB
 ////////////////////////////////////////
 
 

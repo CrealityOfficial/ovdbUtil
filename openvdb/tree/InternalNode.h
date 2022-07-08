@@ -449,6 +449,7 @@ public:
     /// Mark all values (both tiles and voxels) as active.
     void setValuesOn();
 
+#if !_STRINK_OPENVDB
     //
     // I/O
     //
@@ -458,6 +459,7 @@ public:
     void readBuffers(std::istream&, bool fromHalf = false);
     void readBuffers(std::istream&, const CoordBBox&, bool fromHalf = false);
 
+#endif // _STRINK_OPENVDB
 
     //
     // Aux methods
@@ -2206,7 +2208,7 @@ InternalNode<ChildT, Log2Dim>::copyToDense(const CoordBBox& bbox, DenseT& dense)
 
 
 ////////////////////////////////////////
-
+#if !_STRINK_OPENVDB
 
 template<typename ChildT, Index Log2Dim>
 inline void
@@ -2289,7 +2291,7 @@ InternalNode<ChildT, Log2Dim>::readTopology(std::istream& is, bool fromHalf)
     }
 }
 
-
+#endif // _STRINK_OPENVDB
 ////////////////////////////////////////
 
 
@@ -3051,7 +3053,7 @@ InternalNode<ChildT, Log2Dim>::doVisit2(NodeT& self, OtherChildAllIterT& otherIt
 
 
 ////////////////////////////////////////
-
+#if !_STRINK_OPENVDB
 
 template<typename ChildT, Index Log2Dim>
 inline void
@@ -3094,6 +3096,7 @@ InternalNode<ChildT, Log2Dim>::readBuffers(std::istream& is,
     this->clip(clipBBox, background);
 }
 
+#endif
 
 ////////////////////////////////////////
 

@@ -346,6 +346,7 @@ public:
     const Buffer& buffer() const { return mBuffer; }
     Buffer& buffer() { return mBuffer; }
 
+#if !_STRINK_OPENVDB
     //
     // I/O methods
     //
@@ -373,6 +374,7 @@ public:
     void writeBuffers(std::ostream& os, bool toHalf = false) const;
 
     size_t streamingSize(bool toHalf = false) const;
+#endif // !_STRINK_OPENVDB
 
     //
     // Accessor methods
@@ -1302,7 +1304,7 @@ LeafNode<T, Log2Dim>::copyFromDense(const CoordBBox& bbox, const DenseT& dense,
 
 
 ////////////////////////////////////////
-
+#if !_STRINK_OPENVDB
 
 template<typename T, Index Log2Dim>
 inline void
@@ -1319,10 +1321,7 @@ LeafNode<T, Log2Dim>::writeTopology(std::ostream& os, bool /*toHalf*/) const
     mValueMask.save(os);
 }
 
-
 ////////////////////////////////////////
-
-
 
 template<typename T, Index Log2Dim>
 inline void
@@ -1445,7 +1444,7 @@ LeafNode<T, Log2Dim>::writeBuffers(std::ostream& os, bool toHalf) const
         mValueMask, /*childMask=*/NodeMaskType(), toHalf);
 }
 
-
+#endif // _STRINK_OPENVDB
 ////////////////////////////////////////
 
 

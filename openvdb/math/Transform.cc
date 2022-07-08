@@ -62,7 +62,7 @@ Transform::createFrustumTransform(const BBoxd& bbox, double taper,
 
 
 ////////////////////////////////////////
-
+#if !_STRINK_OPENVDB
 
 void
 Transform::read(std::istream& is)
@@ -157,7 +157,7 @@ Transform::write(std::ostream& os) const
 
     mMap->write(os);
 }
-
+#endif //_STRINK_OPENVDB
 
 ////////////////////////////////////////
 
@@ -448,7 +448,7 @@ Transform::operator==(const Transform& other) const
 
 ////////////////////////////////////////
 
-
+#if !_STRINK_OPENVDB
 void
 Transform::print(std::ostream& os, const std::string& indent) const
 {
@@ -540,7 +540,7 @@ operator<<(std::ostream& os, const Transform& t)
     os << t.baseMap()->str() << std::endl;
     return os;
 }
-
+#endif // _STRINK_OPENVDB
 
 } // namespace math
 } // namespace OPENVDB_VERSION_NAME
