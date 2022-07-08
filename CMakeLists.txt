@@ -319,8 +319,8 @@ set(SRCS include/ovdbutil/interface.h
 		 )
 
 if(HAVE_OVDBUTIL_BOOLEAN)
-	list(APPEND SRC include/ovdbutil/booleanCom.h
-					src/booleanCom.cpp
+	list(APPEND SRCS include/ovdbutil/booleanCom.h
+					 src/booleanCom.cpp
 					)
 endif()
 		
