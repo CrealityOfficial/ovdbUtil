@@ -21,7 +21,10 @@ message(STATUS "----------------------------------------------------")
 
 # Collect and configure lib dependencies
 __enable_bigobj()
+
+__cc_find(Boost)
 __assert_target(boost_iostreams)
+__cc_find(Tbb)
 __assert_target(tbb)
 
 __cc_find(Trimesh2)
@@ -50,6 +53,7 @@ if(USE_ZLIB)
   add_definitions(-DZ_PREFIX)
 endif()
 
+__cc_find(Zlib)
 __assert_target(zlib)
 
 list(APPEND OPENVDB_CORE_DEPENDENT_LIBS zlib)
