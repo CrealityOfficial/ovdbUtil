@@ -312,8 +312,12 @@ __add_real_target(openvdb lib SOURCE ${OVDB_SRCS}
 set(SRCS include/ovdbutil/interface.h
 		 include/ovdbutil/init.h
 		 include/ovdbutil/hollowing.h
+		 include/ovdbutil/subdivision.h
+		 include/ovdbutil/booleanCom.h
 		 src/init.cpp
 		 src/hollowing.cpp
+		 src/subdivision.cpp
+		 src/booleanCom.cpp
 		 src/util.h
 		 src/util.cpp
 		 )
