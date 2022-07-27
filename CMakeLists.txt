@@ -22,6 +22,7 @@ message(STATUS "----------------------------------------------------")
 # Collect and configure lib dependencies
 __enable_bigobj()
 
+__cc_find(mmesh)
 __cc_find(Boost)
 __assert_target(boost_iostreams)
 __cc_find(Tbb)
