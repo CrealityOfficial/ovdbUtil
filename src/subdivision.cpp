@@ -36,14 +36,14 @@ namespace ovdbutil
         return omesh;
     }
 
-    trimesh::TriMesh* remesh(trimesh::TriMesh* mesh, const SubdivisonParameter& parameter, ccglobal::Tracer* tracer)
+    trimesh::TriMesh* remesh(trimesh::TriMesh* mesh, const float xformf, const int w, ccglobal::Tracer* tracer)
     {
-        openvdb::math::Transform::Ptr xform = openvdb::math::Transform::createLinearTransform(0.1);
+        openvdb::math::Transform::Ptr xform = openvdb::math::Transform::createLinearTransform(xformf);
         std::vector<openvdb::math::Vec3s> s_points;
         std::vector<openvdb::math::Coord::Vec3I> s_faces;
         for (int i = 0; i < mesh->vertices.size(); i++)
         {
-            s_points.push_back(openvdb::math::Vec3s(mesh->vertices.at(i).x * 10, mesh->vertices.at(i).y * 10, mesh->vertices.at(i).z * 10));
+            s_points.push_back(openvdb::math::Vec3s(mesh->vertices.at(i).x / xformf, mesh->vertices.at(i).y / xformf, mesh->vertices.at(i).z / xformf));
         }
         for (int i = 0; i < mesh->faces.size(); i++)
         {
@@ -53,7 +53,7 @@ namespace ovdbutil
         //openvdb::FloatGrid::Ptr gridptr;
         openvdb::FloatGrid::Ptr subgrid = openvdb::tools::meshToVolume<openvdb::FloatGrid>(mesh_b, *xform);
         //openvdb::io::File("mypoints.vdb").write({ subgrid });
-        subgrid = openvdb::tools::topologyToLevelSet(*subgrid, 3, 1, 1, 3);   //extent    smooth steps
+        subgrid = openvdb::tools::topologyToLevelSet(*subgrid, 3, 1, w, 3);   //extent    smooth steps
         double iso_surface = 0.;
         double adaptivity = 0.;
         auto omesh = grid_to_mesh(*subgrid, iso_surface, adaptivity, false);
