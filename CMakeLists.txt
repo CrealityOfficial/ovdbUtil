@@ -47,7 +47,8 @@ if(TARGET tbb)
     list(APPEND OPENVDB_CORE_DEPENDENT_LIBS tbb)
     add_definitions(-DUSE_TBB_MODULE)
 endif()
-    list(APPEND OPENVDB_CORE_DEPENDENT_LIBS boost_iostreams)
+
+list(APPEND OPENVDB_CORE_DEPENDENT_LIBS boost_iostreams)
 set(USE_ZLIB 1)
 if(USE_ZLIB)
   set(OPENVDB_USE_ZLIB 1)
@@ -330,7 +331,7 @@ if(HAVE_OVDBUTIL_BOOLEAN)
 endif()
 		
 list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-list(APPEND LIBS trimesh2 mmesh boost_iostreams tbb openvdb)
+list(APPEND LIBS trimesh2 mmesh openvdb)
 
 __add_common_library(ovdbutil)
 
