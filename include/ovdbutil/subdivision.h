@@ -43,7 +43,7 @@ namespace ovdbutil
 
 
 	OVDBUTIL_API trimesh::TriMesh* subdivison(trimesh::TriMesh* mesh,
-		const SubdivisonParameter & = SubdivisonParameter(), ccglobal::Tracer* tracer = nullptr);
+		const SubdivisonParameter & = SubdivisonParameter(), const float sub=0.25, ccglobal::Tracer* tracer = nullptr);
 	OVDBUTIL_API trimesh::TriMesh* remesh(trimesh::TriMesh* mesh, const float xformf, const int w, ccglobal::Tracer* tracer);
 }
 

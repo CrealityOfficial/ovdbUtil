@@ -13,14 +13,14 @@
 
 namespace ovdbutil
 {
-    trimesh::TriMesh* subdivison(trimesh::TriMesh* mesh,const SubdivisonParameter& parameter, ccglobal::Tracer* tracer)
+    trimesh::TriMesh* subdivison(trimesh::TriMesh* mesh,const SubdivisonParameter& parameter,const float sub, ccglobal::Tracer* tracer)
     {
-        openvdb::math::Transform::Ptr xform = openvdb::math::Transform::createLinearTransform(0.25);
+        openvdb::math::Transform::Ptr xform = openvdb::math::Transform::createLinearTransform(sub);
         std::vector<openvdb::math::Vec3s> s_points;
         std::vector<openvdb::math::Coord::Vec3I> s_faces;
         for (int i = 0; i < mesh->vertices.size(); i++)
         {
-            s_points.push_back(openvdb::math::Vec3s(mesh->vertices.at(i).x * 4, mesh->vertices.at(i).y * 4, mesh->vertices.at(i).z * 4));
+            s_points.push_back(openvdb::math::Vec3s(mesh->vertices.at(i).x /sub, mesh->vertices.at(i).y / sub, mesh->vertices.at(i).z / sub));
         }
         for (int i = 0; i < mesh->faces.size(); i++)
         {
