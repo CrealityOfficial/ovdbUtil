@@ -21,7 +21,7 @@ message(STATUS "----------------------------------------------------")
 
 # Collect and configure lib dependencies
 __enable_bigobj()
-__assert_target(boost_iostreams)
+#__assert_target(boost_iostreams)
 __assert_target(tbb)
 
 __cc_find(Trimesh2)
