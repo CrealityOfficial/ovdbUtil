@@ -293,6 +293,11 @@ namespace ovdbutil
                 return nullptr;
             }
         }
+        if (hollowMesh)
+        {
+            delete hollowMesh;
+            hollowMesh = nullptr;
+        }
         return outMesh;
     }
 
