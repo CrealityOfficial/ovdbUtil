@@ -333,7 +333,8 @@ if(HAVE_OVDBUTIL_BOOLEAN)
 endif()
 		
 list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-list(APPEND LIBS trimesh2 mmesh openvdb)
+list(APPEND LIBS mmesh openvdb)
+set(ILIBS trimesh2)
 
 __add_common_library(ovdbutil)
 
