@@ -16,6 +16,7 @@ namespace ccglobal
 
 namespace ovdbutil
 {
+	/// @brief INNER_FILL_CONFIG
 	typedef struct INNER_FILL_CONFIG
 	{
 		bool enable = false;//填充使能
@@ -27,7 +28,7 @@ namespace ovdbutil
 		float gridSize = 5.0;//MarchingCube体素大小
 	}sINNER_FILL_CFG;
 
-
+	/// @brief SubdivisonParameter
     struct SubdivisonParameter
     {
         double min_thickness = 1.0;

@@ -15,16 +15,18 @@ namespace ccglobal
 
 namespace ovdbutil
 {
+	/// @brief TwoTrimesh
     struct TwoTrimesh
     {
         trimesh::TriMesh *m1;
         trimesh::TriMesh *m2;
     };
+	/// @brief BooleanParameter
 
     struct BooleanParameter
     {
-        double externalWidth;
-        double internalWidth;
+        double externalWidth; //< Description
+        double internalWidth; //< Description
     };
 
     OVDBUTIL_API trimesh::TriMesh* generateBoolcom(ovdbutil::TwoTrimesh* mesh, const int type, const BooleanParameter& param, ccglobal::Tracer* tracer=nullptr);

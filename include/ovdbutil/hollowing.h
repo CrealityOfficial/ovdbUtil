@@ -4,6 +4,12 @@
 #include <vector>
 #include "trimesh2/TriMesh.h"
 
+/*! \file hollowing.h
+    \brief A Documented file 抽壳.
+
+    Details.
+*/
+
 namespace trimesh
 {
     class TriMesh;
@@ -16,6 +22,9 @@ namespace ccglobal
 
 namespace ovdbutil
 {
+	
+	/// @brief INNER_FILL_CONFIG
+
 	typedef struct INNER_FILL_CONFIG
 	{
 		bool enable = false;//填充使能
@@ -27,7 +36,9 @@ namespace ovdbutil
 		float gridSize = 5.0;//MarchingCube体素大小
 	}sINNER_FILL_CFG;
 
-
+  
+    /// @brief HollowingParameter
+   
     struct HollowingParameter
     {
         double min_thickness = 1.0;
@@ -40,12 +51,36 @@ namespace ovdbutil
 		INNER_FILL_CONFIG fill_config;
     };
 
-        
+    /// @brief  generateInterior Implementation ImplementationImplementationImplementationImplementationImplementationImplementation
+    /// @details 
+    /// 
     OVDBUTIL_API trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh, std::vector<trimesh::vec3>* supportPoints,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
+    /// @brief  hollowMesh Implementation ImplementationImplementationImplementationImplementationImplementationImplementation
+    /// @details 
+    /// 
     OVDBUTIL_API void hollowMesh(trimesh::TriMesh* mesh,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 
+ /**
+    *用于将一个mesh的stl的文件输入， 再抽壳
+    *\li 测试中。。。。。。1
+    *\li 测试中。。。。。。2
+    *\li 测试中。。。。。。3
+
+    *\param TriMesh
+    *\param HollowingParameter
+    *\param Tracer
+
+    *\return TriMesh
+
+    *\todo 在xxx的此接口有抽壳和填充的功能
+*/
+
+/// @brief Implementation ImplementationImplementationImplementationImplementationImplementationImplementation
+/// @details 
+/// 
+///     创建一个测试hollowMeshAndFill抽壳的API接口的函数
     OVDBUTIL_API trimesh::TriMesh* hollowMeshAndFill(trimesh::TriMesh* mesh,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 

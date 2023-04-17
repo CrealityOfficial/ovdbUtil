@@ -15,6 +15,7 @@ namespace ccglobal
 
 namespace ovdbutil
 {
+    /// @brief Contour3D
     struct Contour3D {
         std::vector<trimesh::vec3> points;
         std::vector<trimesh::ivec3> faces3;
@@ -23,7 +24,7 @@ namespace ovdbutil
         Contour3D() = default;
         inline bool empty() const;
     };
-
+    /// @brief Contour3DDataAdapter
     class Contour3DDataAdapter {
     public:
         const Contour3D& mesh;
@@ -50,7 +51,7 @@ namespace ovdbutil
         double                    adaptivity,
         bool                      relaxDisorientedTriangles);
 
-
+    /// @brief TriangleMeshDataAdapter
     class TriangleMeshDataAdapter {
     public:
         trimesh::TriMesh& mesh;
