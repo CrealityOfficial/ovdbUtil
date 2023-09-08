@@ -43,7 +43,7 @@ if(TARGET tbb)
     list(APPEND OPENVDB_CORE_DEPENDENT_LIBS tbb)
     add_definitions(-DUSE_TBB_MODULE)
 endif()
-    list(APPEND OPENVDB_CORE_DEPENDENT_LIBS boostfilesystem)
+
 set(USE_ZLIB 1)
 if(USE_ZLIB)
   set(OPENVDB_USE_ZLIB 1)
@@ -299,7 +299,7 @@ set(OVDB_SRCS ${OPENVDB_LIBRARY_THREAD_INCLUDE_FILES}
 		 )
 set(INCS ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 set(DEFS ${OPENVDB_CORE_PRIVATE_DEFINES} OPENVDB_STATIC OPENVDB_STATICLIB)
-set(LIBS ${OPENVDB_CORE_DEPENDENT_LIBS})
+set(LIBS ${OPENVDB_CORE_DEPENDENT_LIBS} boost_filesystem)
 
 __add_real_target(openvdb lib SOURCE ${OVDB_SRCS}
 							  INC ${INCS}
@@ -329,7 +329,7 @@ if(HAVE_OVDBUTIL_BOOLEAN)
 endif()
 		
 list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-list(APPEND LIBS trimesh2 mmesh boost_file_system tbb openvdb)
+list(APPEND LIBS trimesh2 mmesh boost_filesystem tbb openvdb)
 
 __add_common_library(ovdbutil)
 
