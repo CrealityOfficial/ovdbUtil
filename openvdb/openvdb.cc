@@ -81,9 +81,9 @@ initialize()
     // @note String grids types are deprecated but we still register them
     //   as supported serializable types for backward compatibility. This
     //   will likely be removed in a future major version
-OPENVDB_NO_DEPRECATION_WARNING_BEGIN
+//OPENVDB_NO_DEPRECATION_WARNING_BEGIN
     StringGrid::registerGrid();
-OPENVDB_NO_DEPRECATION_WARNING_END
+//OPENVDB_NO_DEPRECATION_WARNING_END
 
     // Register types associated with point index grids.
     Metadata::registerType(typeNameAsString<PointIndex32>(), Int32Metadata::createMetadata);
