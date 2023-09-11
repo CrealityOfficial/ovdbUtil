@@ -1574,9 +1574,9 @@ template<typename TreeT>
 inline void
 Grid<TreeT>::evalMinMax(ValueType& minVal, ValueType& maxVal) const
 {
-    OPENVDB_NO_DEPRECATION_WARNING_BEGIN
+//    OPENVDB_NO_DEPRECATION_WARNING_BEGIN
     tree().evalMinMax(minVal, maxVal);
-    OPENVDB_NO_DEPRECATION_WARNING_END
+//    OPENVDB_NO_DEPRECATION_WARNING_END
 }
 
 
