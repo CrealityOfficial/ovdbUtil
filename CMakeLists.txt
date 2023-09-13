@@ -22,13 +22,12 @@ message(STATUS "----------------------------------------------------")
 # Collect and configure lib dependencies
 __enable_bigobj()
 
-__cc_find(Tbb)
-__cc_find(MMesh)
-__cc_find(Boost)
+__cc_find(tbb)
+__cc_find(mmesh)
+__cc_find(boost)
 __assert_target(boost_iostreams)
 
-
-__cc_find(Trimesh2)
+__cc_find(trimesh2)
 __assert_target(trimesh2)
 __enable_bigobj()
 
@@ -52,13 +51,10 @@ list(APPEND OPENVDB_CORE_DEPENDENT_LIBS boost_iostreams)
 set(USE_ZLIB 1)
 if(USE_ZLIB)
   set(OPENVDB_USE_ZLIB 1)
-  add_definitions(-DZ_PREFIX)
+  __cc_find(zlib_static)
+  __assert_target(zlib_static)
+  list(APPEND OPENVDB_CORE_DEPENDENT_LIBS zlib_static)
 endif()
-
-__cc_find(Zlib)
-__assert_target(zlib)
-
-list(APPEND OPENVDB_CORE_DEPENDENT_LIBS zlib)
 
 if(NOT CC_BC_ANDROID)
 	find_package(Threads REQUIRED)
