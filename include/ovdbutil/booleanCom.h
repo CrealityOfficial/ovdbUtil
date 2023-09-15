@@ -1,20 +1,17 @@
 #ifndef OVDBUTIL_BOOLEAN_1650957593077_H
 #define OVDBUTIL_BOOLEAN_1650957593077_H
 #include "ovdbutil/interface.h"
-#include "mmesh/trimesh/trimeshutil.h"
+#include "trimesh2/TriMesh.h"
+#include "ccglobal/tracer.h"
 #include <vector>
-namespace trimesh
-{
-    class TriMesh;
-}
-
-namespace ccglobal
-{
-    class Tracer;
-}
 
 namespace ovdbutil
 {
+    struct edge {
+        trimesh::vec3 p0;
+        trimesh::vec3 p1;
+    };
+
 	/// @brief TwoTrimesh
     struct TwoTrimesh
     {

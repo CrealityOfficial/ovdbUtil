@@ -1,12 +1,8 @@
 #include "ovdbutil/subdivision.h"
 
 #include "util.h"
-#include "mmesh/trimesh/trimeshutil.h"
 #include "ccglobal/tracer.h"
 #include <openvdb/tools/RayIntersector.h>
-#include "mmesh/create/createcylinder.h"
-#include "mmesh/camera/ray.h"
-#include "mmesh/util/adjacentoctree.h"
 #include <openvdb/math/Vec3.h>
 #include <openvdb/math/Coord.h>
 #include "openvdb/tools/TopologyToLevelSet.h"

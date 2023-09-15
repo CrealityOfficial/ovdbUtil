@@ -22,13 +22,7 @@ message(STATUS "----------------------------------------------------")
 # Collect and configure lib dependencies
 __enable_bigobj()
 
-__cc_find(Tbb)
-__cc_find(MMesh)
-__cc_find(Boost)
-__assert_target(boost_iostreams)
-
-
-__cc_find(Trimesh2)
+__cc_find(trimesh2)
 __assert_target(trimesh2)
 __enable_bigobj()
 
@@ -43,22 +37,23 @@ set(OPENVDB_CORE_DEPENDENT_LIBS "")
 # always be pulled from there (we should always be using the version of TBB
 # shipped with Houdini).
 
-if(TARGET tbb)
-    list(APPEND OPENVDB_CORE_DEPENDENT_LIBS tbb)
-    add_definitions(-DUSE_TBB_MODULE)
-endif()
+__cc_find(tbb)
+__assert_target(tbb)
 
-list(APPEND OPENVDB_CORE_DEPENDENT_LIBS boost_iostreams)
+list(APPEND OPENVDB_CORE_DEPENDENT_LIBS tbb)
+add_definitions(-DUSE_TBB_MODULE)
+
+__cc_find(boost_header)
+__assert_target(boost_header)
+list(APPEND OPENVDB_CORE_DEPENDENT_LIBS boost_header)
+
 set(USE_ZLIB 1)
 if(USE_ZLIB)
   set(OPENVDB_USE_ZLIB 1)
-  add_definitions(-DZ_PREFIX)
+  __cc_find(zlib_static)
+  __assert_target(zlib_static)
+  list(APPEND OPENVDB_CORE_DEPENDENT_LIBS zlib_static)
 endif()
-
-__cc_find(Zlib)
-__assert_target(zlib)
-
-list(APPEND OPENVDB_CORE_DEPENDENT_LIBS zlib)
 
 if(NOT CC_BC_ANDROID)
 	find_package(Threads REQUIRED)
@@ -314,26 +309,12 @@ __add_real_target(openvdb lib SOURCE ${OVDB_SRCS}
 							  INTERFACE ${INCS}
 							  )
 			
-			
-set(SRCS include/ovdbutil/interface.h
-		 include/ovdbutil/init.h
-		 include/ovdbutil/hollowing.h
-		 include/ovdbutil/subdivision.h
-		 src/init.cpp
-		 src/hollowing.cpp
-		 src/util.h
-		 src/util.cpp
-		 src/subdivision.cpp
-		 )
-
-if(HAVE_OVDBUTIL_BOOLEAN)
-	list(APPEND SRCS include/ovdbutil/booleanCom.h
-					 src/booleanCom.cpp
-					)
-endif()
+__files_group(${CMAKE_CURRENT_SOURCE_DIR}/include/ H1)
+__files_group(${CMAKE_CURRENT_SOURCE_DIR}/src/ S1)
+list(APPEND SRCS ${H1} ${S1})			
 		
 list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-list(APPEND LIBS mmesh openvdb)
+list(APPEND LIBS openvdb)
 set(ILIBS trimesh2)
 
 __add_common_library(ovdbutil)

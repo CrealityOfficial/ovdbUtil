@@ -3,10 +3,11 @@
 #include "openvdb/tools/Morphology.h"
 #include <openvdb/tools/Composite.h>
 #include "util.h"
-#include "mmesh/trimesh/trimeshutil.h"
 #include "openvdb/tools/LevelSetUtil.h"
 #include "ccglobal/tracer.h"
-#include "mmesh/create/createcylinder.h"
+
+#include "mesh/trimeshutil.h"
+#include "mesh/createcylinder.h"
 
 
 namespace ovdbutil

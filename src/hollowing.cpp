@@ -1,11 +1,12 @@
 #include "ovdbutil/hollowing.h"
 
 #include "util.h"
-#include "mmesh/trimesh/trimeshutil.h"
-#include "ccglobal/tracer.h"
-#include "mmesh/create/createcylinder.h"
-#include "mmesh/camera/ray.h"
-#include "mmesh/util/adjacentoctree.h"
+
+#include "mesh/trimeshutil.h"
+#include "mesh/createcylinder.h"
+#include "mesh/ray.h"
+#include "mesh/adjacentoctree.h"
+
 #include <openvdb/math/Vec3.h>
 #include <openvdb/math/Coord.h>
 
