@@ -345,13 +345,14 @@ namespace ovdbutil
         openvdb:: MaskTree maskTree(gridptr1.get()->tree(), false/*background*/, openvdb::TopologyCopy());
 
 
-        openvdb::tools::erodeActiveValues(maskTree, 3+param  , openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
-        openvdb::tools::dilateActiveValues(maskTree, closingSteps, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
+        openvdb::tools::erodeActiveValues(maskTree, -1  , openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
+        //openvdb::tools::dilateActiveValues(maskTree, closingSteps, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
+       /* openvdb::tools::dilateActiveValues(maskTree, dilation, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
         openvdb::tools::pruneInactive(maskTree);
         openvdb::tools::dilateActiveValues(maskTree, halfWidth, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
         openvdb::tools::erodeActiveValues(maskTree,  halfWidth, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
             
-        openvdb::tools::pruneInactive(maskTree);
+        openvdb::tools::pruneInactive(maskTree);*/
 
 
           //  M0.dilateVoxels(1+param,openvdb::tools:: NN_FACE, true);
@@ -364,7 +365,7 @@ namespace ovdbutil
         //openvdb::tools::erodeActiveValues(maskTree, closingSteps, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
         //openvdb::tools::erodeActiveValues(maskTree, closingSteps, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
         //openvdb::tools::erodeActiveValues(*lsTree, closingSteps, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
-        openvdb::tools::dilateActiveValues(*lsTree, 8+param, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
+        //openvdb::tools::dilateActiveValues(*lsTree, 8+param, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
     // openvdb::tools::dilateActiveValues(*lsTree, closingSteps, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
         //openvdb::tools::dilateActiveValues(*lsTree, closingSteps, openvdb::tools::NN_FACE, openvdb::tools::IGNORE_TILES);
 

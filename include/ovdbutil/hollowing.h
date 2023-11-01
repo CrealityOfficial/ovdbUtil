@@ -4,6 +4,7 @@
 #include <vector>
 #include "trimesh2/TriMesh.h"
 
+
 /*! \file hollowing.h
     \brief A Documented file 抽壳头文件，单独为接口函数提供的文件头.
 
@@ -22,7 +23,13 @@ namespace ccglobal
 
 namespace ovdbutil
 {
-	
+    enum PRECISION
+    {
+        EXTREMITY = 4,
+        EXQUISITE = 3,
+        NORMAL = 2,
+        CRUDE = 1,
+    };
     /**
        *抽壳的内部填充配置参数结构，是HollowingParameter结构的子结构，generateInfill这个函数用到
 
@@ -67,9 +74,12 @@ namespace ovdbutil
         double voxel_size_inout_range = 1.0;
         double voxel_size = 1.0;
 		
+        int precision = CRUDE;
 		
 		INNER_FILL_CONFIG fill_config;
     };
+
+   
 
     /// @brief  generateInterior 像函数名字一样，是抽壳的反操作，去掉壳之后的内部mesh
     /// @details 基于体素法的levelset重构算法实施
@@ -77,10 +87,10 @@ namespace ovdbutil
     OVDBUTIL_API trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh, 
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 
-    /// @brief  空函数，内部无代码
-    OVDBUTIL_API void hollowMesh(trimesh::TriMesh* mesh,
+    /// @brief  启用这个函数当作控制精细程度的接口函数
+    OVDBUTIL_API trimesh::TriMesh* hollowMesh(trimesh::TriMesh* mesh,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
-
+    
  /**
     *用于将一个mesh的stl的文件输入， 再抽壳
     *\param TriMesh 输入模型
@@ -97,6 +107,9 @@ namespace ovdbutil
     /// @brief generateInfill函数做为上面函数的基础函数，在完成抽壳之后，在抽空的空间区域，填充细小的圆柱，圆柱的参数在INNER_FILL_CONFIG中
 	OVDBUTIL_API std::vector<trimesh::TriMesh*> generateInfill(trimesh::TriMesh* mesh, const trimesh::vec3& normal,
 		const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
+
+    OVDBUTIL_API trimesh::TriMesh* hollowPrecisionMeshAndFill(trimesh::TriMesh* mesh,
+        const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 }
 
 #endif // OVDBUTIL_HOLLOWING_1650957593077_H

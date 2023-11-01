@@ -3173,7 +3173,7 @@ meshToVolume(
     }
 
     const ValueType voxelSize = ValueType(voxel_size);
-
+    //const ValueType voxelSize = ValueType(transform.voxelSize()[0]);
     if (!std::isfinite(voxelSize) || math::isZero(voxelSize)) {
         std::stringstream msg;
         msg << "Illegal transform, voxel size = " << voxelSize;

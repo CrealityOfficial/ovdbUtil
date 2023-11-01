@@ -115,7 +115,6 @@ namespace ovdbutil
     
         openvdb::tools::volumeToMesh(grid, points, triangles, quads, isovalue,
             adaptivity, relaxDisorientedTriangles);
-    
         Contour3D ret;
         ret.points.reserve(points.size());
         ret.faces3.reserve(triangles.size());
