@@ -5170,7 +5170,7 @@ doVolumeToMesh(
 {
     VolumeToMesh mesher(isovalue, adaptivity, relaxDisorientedTriangles);
     mesher(grid);
-
+    
     // Preallocate the point list
     points.clear();
     points.resize(mesher.pointListSize());

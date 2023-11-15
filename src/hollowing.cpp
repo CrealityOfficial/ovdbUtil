@@ -7,8 +7,24 @@
 #include "mesh/ray.h"
 #include "mesh/adjacentoctree.h"
 
+#include "topomesh/interface/subdivision.h"
+#include "internal/alg/fillhoneycombs.h"
+#include "topomesh/interface/utils.h"
+#include "internal/data/mmesht.h"
+#include "internal/data/CMesh.h"
+#include "trimesh2/TriMesh_algo.h"
 #include <openvdb/math/Vec3.h>
 #include <openvdb/math/Coord.h>
+#include <openvdb/tools/LevelSetSphere.h>
+#include <openvdb/tools/Clip.h>
+#include <openvdb/tools/ValueTransformer.h>
+#include <openvdb/tools/MeshToVolume.h>
+#include <openvdb/tools/Mask.h>
+#include <openvdb/tools/Composite.h>
+#include <openvdb/tools/GridTransformer.h>
+#include <openvdb/tools/LevelSetUtil.h>
+
+
 
 namespace ovdbutil
 {
@@ -57,7 +73,7 @@ namespace ovdbutil
 		int startY = minY / gap + 1;
 		int endY = maxY / gap;
 
-        //ÅÅ³ý³¬³ö±ß½çµÄ½»µã
+        //ï¿½Å³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß½ï¿½Ä½ï¿½ï¿½ï¿½
         if (startX* gap - minX< fillConfig.fillRadius*2)
         {
             startX++;
@@ -140,9 +156,232 @@ namespace ovdbutil
 
 
         //bug for param flags: hollow Optimization 
-        openvdb::FloatGrid::Ptr gridptr  = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size,0xE, tracer);
+       openvdb::math::Transform::Ptr transform = openvdb::math::Transform::createLinearTransform(1.0);
+     
+        //std::cout << "trans size :" << transform->voxelSize() << "\n";
+        //transform.postScale(0.5);       
+       // std::cout << "after trans size :" << transform->voxelSize() << "\n";
+
+        std::vector<openvdb::math::Vec3s> cube_points;
+        std::vector<openvdb::math::Coord::Vec3I> cube_faces;
+        for (int i = 0; i < mesh->vertices.size(); i++)
+        {
+            cube_points.push_back(openvdb::math::Vec3s(mesh->vertices.at(i).x*3 , mesh->vertices.at(i).y*3, mesh->vertices.at(i).z*3));
+        }
+        for (int i = 0; i < mesh->faces.size(); i++)
+        {
+            cube_faces.push_back(openvdb::math::Coord::Vec3I(mesh->faces.at(i).x, mesh->faces.at(i).y, mesh->faces.at(i).z));
+        }
+        openvdb::tools::QuadAndTriangleDataAdapter<openvdb::math::Vec3s, openvdb::math::Coord::Vec3I> mesh_a(cube_points, cube_faces);
+
+        trimesh::TriMesh* newmesh = new trimesh::TriMesh();
+        *newmesh = *mesh;
+        std::vector<int> selectfaces;
+        topomesh::findNeignborFacesOfSameAsNormal(newmesh, 80319, 1.f, selectfaces);
+       
+        std::vector<bool> delfaces(newmesh->faces.size(),false);
+        std::vector<bool> markvexter(newmesh->vertices.size(),false);
+        float z;
+        for (int fi : selectfaces)
+        {
+            delfaces[fi] = true;
+            for (int vi = 0; vi < 3; vi++)
+            {
+                int v = newmesh->faces[fi][vi];
+                if (!markvexter[v])
+                {
+                    markvexter[v] = true;
+                    z = newmesh->vertices[v].z;
+                    newmesh->vertices[v].z = newmesh->vertices[v].z - 1.0f;
+                }
+            }
+        }
+       /* trimesh::remove_faces(mesh, delfaces);
+        trimesh::remove_unused_vertices(mesh);*/
+       
+       // newmesh->write("vertex.ply");
+        openvdb::FloatGrid::Ptr gridptr1 = mesh_to_grid(newmesh, *transform, 3.0, 3.0f, voxel_size, 0xE, tracer);
+        //typename openvdb::FloatGrid::Accessor accessor1 = gridptr1->getAccessor();
+       
+        std::cout << "back ground : " << gridptr1->background() << "\n";
         
-        //openvdb::FloatGrid::Ptr gridptrout1 = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size);
+       /* openvdb::BoolGrid::Ptr boolptr = openvdb::BoolGrid::create();
+
+        for (int fi = 0 ; fi < 500; fi++)
+        {
+            openvdb::Vec3s max(-200,-200,-200);
+            openvdb::Vec3s min(200, 200, 200);
+
+            for (int vi = 0; vi > 3; vi++)
+            {
+                max.x() = std::max(max.x(), mesh->vertices[mesh->faces[fi][vi]].x);
+                max.y() = std::max(max.y(), mesh->vertices[mesh->faces[fi][vi]].y);
+                max.z() = std::max(max.z(), mesh->vertices[mesh->faces[fi][vi]].z);
+
+                min.x() = std::min(min.x(), mesh->vertices[mesh->faces[fi][vi]].x);
+                min.y() = std::min(min.y(), mesh->vertices[mesh->faces[fi][vi]].y);
+                min.z() = std::min(min.z(), mesh->vertices[mesh->faces[fi][vi]].z);
+            }
+
+            openvdb::CoordBBox bbx= openvdb::CoordBBox(min.x(),min.y(),min.z(), max.x(),max.y(),max.z());
+            boolptr->fill(bbx,0.0);
+        }
+        openvdb::tools::VolumeToMesh mesher;*/
+        //openvdb::tools::extractIsosurfaceMask();
+        
+        //openvdb::FloatGrid::Ptr gridptr1 = openvdb::tools::meshToVolume<openvdb::FloatGrid>(mesh_a, *transform, out_range, in_range, voxel_size, 0xE, tracer);
+       /* openvdb::Mat4R xform;
+        openvdb::tools::GridTransformer transformer(xform);
+        transformer.transformGrid<openvdb::tools::PointSampler, openvdb::FloatGrid>(*gridptr1,);*/
+
+        //openvdb::FloatGrid::Accessor accessor = gridptr1->getAccessor();
+        //for (openvdb::FloatGrid::ValueOnCIter iter = gridptr1->cbeginValueOn(); iter; ++iter) {
+        //    // Get the coordinates of the current voxel
+        //    openvdb::Coord coord = iter.getCoord();
+        //    
+        //    // Convert voxel coordinates to world coordinates
+        //    openvdb::Vec3d worldPos = transform->indexToWorld(coord);
+        //    std::cout << "Grid " << coord << " worldPos " << worldPos << std::endl;
+        //    // Do something with the world position
+        //    // ...
+        //}
+       // openvdb::CoordBBox bbx = gridptr1->evalActiveVoxelBoundingBox();
+       // std::cout << " bbx.min().z() " << bbx.min().z() << " bbx.max().z() " << bbx.max().z() << std::endl;
+       // gridptr1->clipGrid(openvdb::BBoxd(openvdb::math::Vec3i(bbx.min().x(),bbx.min().y(), -12), openvdb::math::Vec3i(bbx.max().x(), bbx.max().y(), bbx.max().z())));
+        
+        //openvdb::FloatGrid::Ptr gridptr =
+        //    openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(
+        //        /*radius=*/10.0, /*center=*/openvdb::Vec3f(0, 0, 0),
+        //        /*voxel size=*/0.5, /*width=*/2.0);   
+        
+        //openvdb::tools::signedFloodFillWithValues(gridptr->tree(), 2.0, -2.0);
+        openvdb::Vec3f c = openvdb::Vec3f(0, 0, 0);
+        openvdb::FloatGrid::Ptr grid =
+            openvdb::FloatGrid::create(/*background value=*/2.0);
+        using ValueT = typename openvdb::FloatGrid::ValueType;
+        const ValueT outside = grid->background();
+        const ValueT inside = -outside;
+        int padding = int(openvdb::math::RoundUp(openvdb::math::Abs(outside)));
+        std::cout << "background : " << grid->background() << "\n";
+        std::cout << "padding : " << padding << "\n";
+        
+        std::cout << " grid->voxelSize() : " << grid->voxelSize() << "\n";
+        int dim = int(3.f + padding);
+        typename openvdb::FloatGrid::Accessor accessor = grid->getAccessor();
+        openvdb::Coord ijk;
+        int& i = ijk[0], & j = ijk[1], & k = ijk[2];
+        std::cout << "i : " << i << " j : " << j << " k : " << k << "\n";
+        for (i = c[0]-dim ; i < c[0] + dim; ++i) {
+            const float x2 = openvdb::math::Pow2(i - c[0]);
+            //const float x2 = openvdb::math::Pow(i - c[0],100);
+            /*const float distx1 = openvdb::math::Pow2(i - 10.f);
+            const float distx2 = openvdb::math::Pow2(i + 10.f);
+            const float distx = std::min(distx1,distx2);*/
+            for (j = c[1]-dim ; j < c[1] + dim; ++j) {
+                const float x2y2 = openvdb::math::Pow2(j - c[1]) + x2;
+                //const float x2y2 = openvdb::math::Pow(j - c[1],100) + x2;
+               /* const float disty1 = openvdb::math::Pow2(j - 10.f);
+                const float disty2 = openvdb::math::Pow2(j + 10.f);
+                const float disty = std::min(disty1, disty2);*/
+                for (k = c[2]-dim ; k < c[2] + dim; ++k) {                   
+                   /* const float dist = openvdb::math::Sqrt(x2y2
+                        + openvdb::math::Pow2(k - c[2])) - 3.f;   
+                   
+                    ValueT val = ValueT(dist);                                   
+                    if (val < inside || outside < val) continue;                   
+                    accessor.setValue(ijk, val);*/
+                    if (k == 0)
+                    {
+                        const float dist = openvdb::math::Sqrt(x2y2) - 3.f;                      
+                        ValueT val = ValueT(dist);
+                        if ( outside < val) continue;
+                        accessor.setValue(ijk, val);
+                    }
+                   /* ValueT val = ValueT(i&j);
+                    if (val < inside || outside < val) continue;
+                    accessor.setValue(ijk, val);*/
+                                                              
+                }
+            }
+        }
+        openvdb::tools::signedFloodFill(grid->tree());
+        ValueT backgound = grid->background();      
+        std::cout << "bbox : " << grid->evalActiveVoxelBoundingBox() << "\n";
+        openvdb::Coord box1 = grid->evalActiveVoxelBoundingBox().getStart();
+        openvdb::Coord box2 = grid->evalActiveVoxelBoundingBox().getEnd();
+        openvdb::Coord ijk1;
+        int& i1 = ijk1[0], & j1 = ijk1[1], & k1 = ijk1[2];
+        for (k1 = box2.z(); k1 >box2.z()-1; --k1) {
+            
+            std::vector<std::pair<int, int>> map;
+            for (i1 = box1.x(); i1 <= box2.x(); ++i1) {
+                for (j1 = box1.y(); j1 <= box2.y(); ++j1) {
+                    if (accessor.getValue(ijk1) != backgound)
+                    {
+                        int n = 0; int cn = 0;
+                        for(int ii=i1-1;ii<=i1+1;ii++)
+                            for (int jj = j1 - 1; jj <= j1 + 1; jj++)
+                            {
+                                if (ii >= box1.x() && ii <= box2.x() && jj >= box1.y() && jj <= box2.y())
+                                {
+                                    openvdb::Coord pad(ii,jj,k1);
+                                    if (accessor.getValue(pad) != backgound)
+                                    {
+                                        n++;
+                                        if (ii == i1 && (jj == j1 - 1 || jj == j1 + 1))
+                                            cn++;
+                                        if (jj == j1 && (ii == i1 - 1 || ii == i1 + 1))
+                                            cn++;
+                                    }
+                                }
+                            }
+                        if (cn != 4&&n>=3)
+                        {
+                            map.push_back(std::make_pair(i1, j1));
+                        }
+                    }
+                }
+            }
+            for (int p = 0; p < map.size(); p++)
+            {
+                if (k1 == box1.z()) continue;
+                openvdb::Coord c(map[p].first,map[p].second,k1);
+                openvdb::Coord b(map[p].first, map[p].second, k1-1);
+                ValueT v = accessor.getValue(c);
+                accessor.setValue(b,v);
+                accessor.setValue(c, backgound);               
+            }
+        }
+       
+        
+       /* for (openvdb::FloatGrid::ValueOnCIter iter = grid->cbeginValueOn(); iter; ++iter) {
+            float dist = iter.getValue();          
+            std::cout << "dist : " << dist <<" iter.getBoundingBox() :"<< iter.getBoundingBox()<<
+                " iter.getCoord() :"<< iter.getCoord()<<"iter.getLevel() : "<< iter.getLevel() <<"\n";
+           
+        }*/
+       /* openvdb::CoordBBox cbbox(openvdb::Coord(0, 0, 0), openvdb::Coord(10, 10, 10));
+        grid->sparseFill(cbbox, 0.);*/
+
+
+        //openvdb::tools::meshToLevelSet();
+       /* for (openvdb::FloatGrid::ValueOnIter iter = gridptr->beginValueOn(); iter; ++iter) {
+            float dist = iter.getValue();
+            iter.setValue((outside - dist) / width);
+        }*/
+        //gridptr->insertMeta("radius", openvdb::FloatMetadata(50.0));
+        //std::cout << "Grid size :" << gridptr->voxelSize()<<" background : " <<gridptr->background();
+       // gridptr->transformPtr()->postScale(0.5f);
+       /* for (openvdb::FloatGrid::ValueOnIter iter = gridptr->beginValueOn(); iter; ++iter) {
+            float dist = iter.getValue();
+            iter.setValue(dist/2.0f);
+        }*/
+       // std::cout << "Grid size :" << gridptr->voxelSize() << " background : " << gridptr->background();
+       /* for (openvdb::FloatGrid::ValueOnCIter iter = gridptr->cbeginValueOn(); iter; ++iter) {
+            std::cout << "Grid" << iter.getCoord() << " = " << *iter << std::endl;
+        }*/
+        //mesh->write("savemesh.ply");
+        //openvdb::FloatGrid::Ptr gridptrout1 = mesh_to_grid(mesh, {}, out_range, in_range, voxel_size,0xF, tracer);
         //// Get the source and target grids' index space to world space transforms.
         //const openvdb::math::Transform
         //    & sourceXform = gridptr->transform(),
@@ -164,7 +403,7 @@ namespace ovdbutil
         //gridptrout1->tree().prune();
 
 
-        if (!gridptr) {
+        if (!gridptr1) {
             if(tracer)
                 tracer->failed("Returned OpenVDB grid is NULL");
             return nullptr;
@@ -174,7 +413,7 @@ namespace ovdbutil
             return nullptr;
 
         if (closing_dist > .0) {
-            gridptr = redistance_grid(*gridptr, -(offset + D), double(in_range));
+            gridptr1 = redistance_grid(*gridptr1, -(offset + D), double(in_range));
         }
         else {
             D = -offset;
@@ -189,12 +428,70 @@ namespace ovdbutil
             }
         }
 
-        double iso_surface = D;
+        //double iso_surface = D;
+        double iso_surface = 0.;
         double adaptivity = 0.;
-        auto omesh = grid_to_mesh(*gridptr, iso_surface, adaptivity, false);
-        
-        //_scale(1. / voxel_scale, omesh);
-        
+        auto omesh = grid_to_mesh(*grid, iso_surface, adaptivity, true);
+        omesh->write("omesh.ply");
+        std::vector<bool> delomesh(omesh->faces.size(), false);       
+        for (int fi = 0; fi < omesh->faces.size(); fi++)
+        {
+            bool f= false;
+            int pf = 0;
+            for (int vi = 0; vi < 3; vi++)
+            {
+                int v = omesh->faces[fi][vi];
+                if (std::fabs(omesh->vertices[v].z-z)<0.2f)
+                {
+                    pf++;
+                }
+            }
+            if (pf == 3)
+                f = true;
+            if (f)
+            {
+                delomesh[fi] = true;
+            }
+        }
+       
+        trimesh::remove_faces(omesh, delomesh);
+        trimesh::remove_unused_vertices(omesh);
+        omesh->need_adjacentfaces();
+        omesh->need_neighbors();
+        for (int vi = 0; vi < omesh->vertices.size(); vi++)
+        {
+            if (omesh->neighbors[vi].size() != omesh->adjacentfaces[vi].size())
+            {
+                omesh->vertices[vi].z = z;
+            }
+        }
+        topomesh::CMesh cmesh(omesh);
+        std::vector<int> edges;
+        std::vector<std::vector<int>> sequentials;
+        cmesh.SelectIndividualEdges(edges);
+        cmesh.GetSequentialPoints(edges, sequentials);
+        trimesh::TriMesh* vmesh = new trimesh::TriMesh();     
+        for(int i=0;i<sequentials.size();i++)
+            for (int j = 0; j < sequentials[i].size(); j++)
+            {
+                int pro = (j - 1 + sequentials[i].size()) % sequentials[i].size();
+                int next =(j + 1 + sequentials[i].size()) % sequentials[i].size();
+                omesh->vertices[sequentials[i][j]].x = (omesh->vertices[sequentials[i][j]].x+ omesh->vertices[sequentials[i][pro]].x+ omesh->vertices[sequentials[i][next]].x)/3.f;
+                omesh->vertices[sequentials[i][j]].y = (omesh->vertices[sequentials[i][j]].y + omesh->vertices[sequentials[i][pro]].y + omesh->vertices[sequentials[i][next]].y) / 3.f;
+                vmesh->vertices.push_back(omesh->vertices[sequentials[i][j]]);
+            }
+        topomesh::JointBotMesh(mesh,omesh, selectfaces,0);
+        vmesh->write("vmesh.ply");        
+        omesh->write("omesh.ply");
+        mesh->write("aftermesh.ply");
+
+        //openvdb::FloatGrid::Ptr gridptr2 = mesh_to_grid(omesh, *transform, out_range, in_range, voxel_size, 0xE, tracer);
+        //openvdb::tools::csgDifference(*gridptr1, *gridptr2);
+        ////_scale(1. / voxel_scale, omesh);
+        //double iso_surface1 = 0.;
+        //double adaptivity1 = 0.;
+        //auto outmesh = ovdbutil::grid_to_mesh(*gridptr1, iso_surface1, adaptivity1, false);
+        //outmesh->write("outmesh.ply");
         if (tracer && tracer->interrupt())
             return nullptr;
 
@@ -202,6 +499,14 @@ namespace ovdbutil
             tracer->progress(0.95f);
         
         return omesh;
+    }
+
+    trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh, const std::vector<int>& selectfaces,
+        const HollowingParameter& parameter, ccglobal::Tracer* tracer)
+    {
+        trimesh::TriMesh* resultmesh;
+
+        return resultmesh;
     }
 
     trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh, 
@@ -248,7 +553,7 @@ namespace ovdbutil
         trimesh::TriMesh* hollowMesh = _generate_interior(mesh, parameter.min_thickness, voxel_scale,
             parameter.closing_distance, tracer, parameter.voxel_size);
 
-        //³é¿ÇºóÌî³ä0
+        //ï¿½ï¿½Çºï¿½ï¿½ï¿½ï¿½0
 		trimesh::TriMesh* outMesh = new trimesh::TriMesh();
 		std::vector<trimesh::TriMesh*> meshtotalV;
 		meshtotalV.push_back(mesh);
@@ -283,9 +588,12 @@ namespace ovdbutil
 				}
 			}
         }
-
+       
         mmesh::mergeTriMesh(outMesh, meshtotalV);
-
+        outMesh->write("outmesh.ply");
+        /*trimesh::TriMesh* newmesh = _generate_interior(outMesh, parameter.min_thickness, voxel_scale,
+            parameter.closing_distance, tracer, parameter.voxel_size);
+        newmesh->write("newmesh.ply");*/
         if (tracer)
         {
             tracer->progress(1.0f);
@@ -312,7 +620,7 @@ namespace ovdbutil
             std::vector<std::pair<int, trimesh::dvec3>> faceIdIntersect;
             aModelAdj.lineCollide((trimesh::dvec3)aray.start, (trimesh::dvec3)trimesh::normalized(aray.dir), faceIdIntersect);
 
-            //¹ýÂËÏàÍ¬µÄµã
+            //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½Äµï¿½
             std::vector<trimesh::dvec3> vctIntersect;
             for (std::pair<int,trimesh::dvec3>& apair:faceIdIntersect)
             {
@@ -329,7 +637,7 @@ namespace ovdbutil
             {
                 const trimesh::vec3& startPoint = (trimesh::vec3)vctIntersect.at(n-1);
                 const trimesh::vec3& endPoint = (trimesh::vec3)vctIntersect.at(n);
-				float height = trimesh::distance(startPoint, endPoint) + param.min_thickness * 0.5;//param.min_thickness*0.25Ìî³äÖù×ÓÉì³öÒ»µã£¬¸üºÃµÄ¸½×Å
+				float height = trimesh::distance(startPoint, endPoint) + param.min_thickness * 0.5;//param.min_thickness*0.25ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ã£¬ï¿½ï¿½ï¿½ÃµÄ¸ï¿½ï¿½ï¿½
 				trimesh::vec3 centerPoint((endPoint.x + startPoint.x) * 0.5, (endPoint.y + startPoint.y) * 0.5, (endPoint.z + startPoint.z) * 0.5);
 				trimesh::TriMesh* cylinderMesh = mmesh::createSoupCylinder(10, param.fill_config.fillRadius, height, centerPoint, aray.dir);
 				vctMesh.push_back(cylinderMesh);
@@ -338,9 +646,132 @@ namespace ovdbutil
         return vctMesh;
 	}
 
-	void hollowMesh(trimesh::TriMesh* mesh,
+    trimesh::TriMesh* hollowPrecisionMeshAndFill(trimesh::TriMesh* mesh,
         const HollowingParameter& parameter, ccglobal::Tracer* tracer)
     {
+        if (tracer)
+        {
+            tracer->progress(0.1f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
+        static const double MIN_OVERSAMPL = 3.;
+        static const double MAX_OVERSAMPL = 8.;
+        trimesh::TriMesh* returnmesh = hollowMesh(mesh, parameter, tracer);
 
+        trimesh::TriMesh* outMesh = new trimesh::TriMesh();
+        std::vector<trimesh::TriMesh*> meshtotalV;
+        meshtotalV.push_back(mesh);
+        if (returnmesh != nullptr && returnmesh->vertices.size() > 0)
+        {
+            meshtotalV.push_back(returnmesh);
+            if (1)//
+            {
+                trimesh::vec3 normal(0.5, 0.0, 1.0);
+                std::vector<trimesh::TriMesh*> vctMesh = generateInfill(returnmesh, normal, parameter);
+                for (trimesh::TriMesh* cyMesh : vctMesh)
+                {
+                    meshtotalV.push_back(cyMesh);
+                }
+            }
+            if (2)//
+            {
+                trimesh::vec3 normal(-0.5, 0.0, 1.0);
+                std::vector<trimesh::TriMesh*> vctMesh = generateInfill(returnmesh, normal, parameter);
+                for (trimesh::TriMesh* cyMesh : vctMesh)
+                {
+                    meshtotalV.push_back(cyMesh);
+                }
+            }
+            if (3)//
+            {
+                trimesh::vec3 normal(0.0, 0.5, 1.0);
+                std::vector<trimesh::TriMesh*> vctMesh = generateInfill(returnmesh, normal, parameter);
+                for (trimesh::TriMesh* cyMesh : vctMesh)
+                {
+                    meshtotalV.push_back(cyMesh);
+                }
+            }
+        }
+        mmesh::mergeTriMesh(outMesh, meshtotalV);
+
+        if (tracer)
+        {
+            tracer->progress(1.0f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
+        return outMesh;
+
+    }
+
+    
+
+
+    trimesh::TriMesh* hollowMesh(trimesh::TriMesh* mesh,
+        const HollowingParameter& parameter, ccglobal::Tracer* tracer)
+    {
+        float min_thickness = parameter.min_thickness * parameter.precision * 1.0f;
+        double voxel_scale = parameter.voxel_size_inout_range;
+        double offset = voxel_scale * min_thickness;
+        double D = voxel_scale * parameter.closing_distance;
+        float  out_range = 0.03f * float(offset);
+        float  in_range = 1.9f * float(offset + D);
+
+        if (tracer && tracer->interrupt())
+            return nullptr;
+        if (tracer)
+        {
+            tracer->progress(0.15f);
+            if (tracer->interrupt())
+            {
+                return nullptr;
+            }
+        }
+        openvdb::math::Transform::Ptr transform = openvdb::math::Transform::createLinearTransform(1.0f / (parameter.precision * 1.0f));
+        std::vector<openvdb::math::Vec3s> cube_points;
+        std::vector<openvdb::math::Coord::Vec3I> cube_faces;
+        for (int i = 0; i < mesh->vertices.size(); i++)
+        {
+            cube_points.push_back(openvdb::math::Vec3s(mesh->vertices.at(i).x * parameter.precision, mesh->vertices.at(i).y * parameter.precision,
+                mesh->vertices.at(i).z * parameter.precision));
+        }
+        for (int i = 0; i < mesh->faces.size(); i++)
+        {
+            cube_faces.push_back(openvdb::math::Coord::Vec3I(mesh->faces.at(i).x, mesh->faces.at(i).y, mesh->faces.at(i).z));
+        }
+        openvdb::tools::QuadAndTriangleDataAdapter<openvdb::math::Vec3s, openvdb::math::Coord::Vec3I> mesh_a(cube_points, cube_faces);
+        openvdb::FloatGrid::Ptr gridptr = openvdb::tools::meshToVolume<openvdb::FloatGrid>(mesh_a, *transform, out_range, in_range, parameter.voxel_size, 0xE, tracer);
+        if (!gridptr) {
+            if (tracer)
+                tracer->failed("Returned OpenVDB grid is NULL");
+            return nullptr;
+        }
+
+        if (tracer && tracer->interrupt())
+            return nullptr;
+
+        if (parameter.closing_distance > .0) {
+            gridptr = redistance_grid(*gridptr, -(offset + D), double(in_range));
+        }
+        else {
+            D = -offset;
+        }
+
+        double iso_surface = D;
+        double adaptivity = 0.;
+        trimesh::TriMesh* hollowMesh = grid_to_mesh(*gridptr, iso_surface, adaptivity, false);
+
+        if (tracer && tracer->interrupt())
+            return nullptr;
+
+        if (tracer)
+            tracer->progress(0.95f);
+
+        return hollowMesh;
     }
 }

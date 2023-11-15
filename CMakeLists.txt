@@ -314,8 +314,8 @@ __files_group(${CMAKE_CURRENT_SOURCE_DIR}/src/ S1)
 list(APPEND SRCS ${H1} ${S1})			
 		
 list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-list(APPEND LIBS openvdb)
-set(ILIBS trimesh2)
+list(APPEND LIBS openvdb topomesh)
+set(ILIBS trimesh2 )
 
 __add_common_library(ovdbutil)
 

@@ -22,8 +22,8 @@ namespace ovdbutil
 
     struct BooleanParameter
     {
-        double externalWidth; //< Description
-        double internalWidth; //< Description
+        double externalWidth=1.0; //< Description
+        double internalWidth=1.0; //< Description
     };
 
     OVDBUTIL_API trimesh::TriMesh* generateBoolcom(ovdbutil::TwoTrimesh* mesh, const int type, const BooleanParameter& param, ccglobal::Tracer* tracer=nullptr);

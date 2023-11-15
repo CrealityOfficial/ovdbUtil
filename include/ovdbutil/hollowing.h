@@ -5,7 +5,7 @@
 #include "trimesh2/TriMesh.h"
 
 /*! \file hollowing.h
-    \brief A Documented file ³é¿ÇÍ·ÎÄ¼þ£¬µ¥¶ÀÎª½Ó¿Úº¯ÊýÌá¹©µÄÎÄ¼þÍ·.
+    \brief A Documented file ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ó¿Úºï¿½ï¿½ï¿½ï¿½á¹©ï¿½ï¿½ï¿½Ä¼ï¿½Í·.
 
     Details.
 */
@@ -22,41 +22,48 @@ namespace ccglobal
 
 namespace ovdbutil
 {
+
+    enum PRECESION {
+        COARSE =0x1,
+        NORMAL=0x2,
+        ELABORATE=0x3,
+        EXTREME=0x4
+    };
 	
     /**
-       *³é¿ÇµÄÄÚ²¿Ìî³äÅäÖÃ²ÎÊý½á¹¹£¬ÊÇHollowingParameter½á¹¹µÄ×Ó½á¹¹£¬generateInfillÕâ¸öº¯ÊýÓÃµ½
+       *ï¿½ï¿½Çµï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½ï¿½á¹¹ï¿½ï¿½ï¿½ï¿½HollowingParameterï¿½á¹¹ï¿½ï¿½ï¿½Ó½á¹¹ï¿½ï¿½generateInfillï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½
 
-       *\param enable Ìî³äÊ¹ÄÜ£¬ÊÇ·ñÌî³ä
-       *\param filltype ÔÝÊ±ÎÞÓÃ, Ä¿Ç°Ä¬ÈÏÌî³äµÄÊÇÔ²Öù
-       *\param fillRadius Ìî³äµÄ°ë¾¶
-       *\param fillratio Ìî³äµÄ±ÈÂÊ
-       *\param fillLenMin Ìî³äµÄ×îÐ¡³¤¶È
-       *\param gridSizeMin MarchingCubeÌåËØ×îÐ¡´óÐ¡
-       *\param gridSize MarchingCubeÌåËØ´óÐ¡
+       *\param enable ï¿½ï¿½ï¿½Ê¹ï¿½Ü£ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
+       *\param filltype ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½, Ä¿Ç°Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½
+       *\param fillRadius ï¿½ï¿½ï¿½Ä°ë¾¶
+       *\param fillratio ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½
+       *\param fillLenMin ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½
+       *\param gridSizeMin MarchingCubeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Ð¡
+       *\param gridSize MarchingCubeï¿½ï¿½ï¿½Ø´ï¿½Ð¡
 
-       *\todo ÌåËØ·¨ÏêÏ¸Ëã·¨¹ý³Ì»¹ÖµµÃ¼ÌÐøÑÐ¾¿£¬±È½Ï¶àµÄÑ§ÊõÖªÊ¶
+       *\todo ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½Ï¸ï¿½ã·¨ï¿½ï¿½ï¿½Ì»ï¿½Öµï¿½Ã¼ï¿½ï¿½ï¿½ï¿½Ð¾ï¿½ï¿½ï¿½ï¿½È½Ï¶ï¿½ï¿½Ñ§ï¿½ï¿½ÖªÊ¶
     */
 
 	typedef struct INNER_FILL_CONFIG
 	{
-		bool enable = false;//Ìî³äÊ¹ÄÜ
+		bool enable = false;//ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
 		int filltype = 0;
-		float fillRadius = 1.0;//Ìî³äµÄ°ë¾¶
-		float fillratio = 0.5;//Ìî³äµÄ±ÈÂÊ
-		float fillLenMin = 1.0;//Ìî³äµÄ×îÐ¡³¤¶È
-		float gridSizeMin = 5.0;//MarchingCubeÌåËØ×îÐ¡´óÐ¡
-		float gridSize = 5.0;//MarchingCubeÌåËØ´óÐ¡
+		float fillRadius = 1.0;//ï¿½ï¿½ï¿½Ä°ë¾¶
+		float fillratio = 0.5;//ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½
+		float fillLenMin = 1.0;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½
+		float gridSizeMin = 5.0;//MarchingCubeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Ð¡
+		float gridSize = 5.0;//MarchingCubeï¿½ï¿½ï¿½Ø´ï¿½Ð¡
 	}sINNER_FILL_CFG;
 
   
     /**
-       *³é¿ÇµÄ»ù±¾²ÎÊýµÄ½á¹¹
-       *\param min_thickness ³é¿Çºñ¶È
-       *\param quality ÓÃÌåËØ·¨²úÉúµÄ×îºóµÄ½á¹ûµÄ¾«¶È
-       *\param closing_distance  ¾ö¶¨ÁËÌåËØ·¨interiorBandWidthµÄ´óÐ¡
-       *\param voxel_size_inout_range  ¾ö¶¨ÁËÌåËØ·¨µÄvoxel scale 
-       *\param voxel_size ¾ö¶¨ÁËÌåËØ·¨µÄvoxel´óÐ¡
-       *\todo ÌåËØ·¨ÏêÏ¸Ëã·¨¹ý³Ì»¹ÖµµÃ¼ÌÐøÑÐ¾¿£¬±È½Ï¶àµÄÑ§ÊõÖªÊ¶
+       *ï¿½ï¿½ÇµÄ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä½á¹¹
+       *\param min_thickness ï¿½ï¿½Çºï¿½ï¿½
+       *\param quality ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä½ï¿½ï¿½ï¿½Ä¾ï¿½ï¿½ï¿½
+       *\param closing_distance  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½interiorBandWidthï¿½Ä´ï¿½Ð¡
+       *\param voxel_size_inout_range  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½voxel scale 
+       *\param voxel_size ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½voxelï¿½ï¿½Ð¡
+       *\todo ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½Ï¸ï¿½ã·¨ï¿½ï¿½ï¿½Ì»ï¿½Öµï¿½Ã¼ï¿½ï¿½ï¿½ï¿½Ð¾ï¿½ï¿½ï¿½ï¿½È½Ï¶ï¿½ï¿½Ñ§ï¿½ï¿½ÖªÊ¶
    */
    
     struct HollowingParameter
@@ -67,36 +74,43 @@ namespace ovdbutil
         double voxel_size_inout_range = 1.0;
         double voxel_size = 1.0;
 		
-		
+        int precision = NORMAL;
+
 		INNER_FILL_CONFIG fill_config;
     };
 
-    /// @brief  generateInterior Ïñº¯ÊýÃû×ÖÒ»Ñù£¬ÊÇ³é¿ÇµÄ·´²Ù×÷£¬È¥µô¿ÇÖ®ºóµÄÄÚ²¿mesh
-    /// @details »ùÓÚÌåËØ·¨µÄlevelsetÖØ¹¹Ëã·¨ÊµÊ©
+    /// @brief  generateInterior ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ÇµÄ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½Ú²ï¿½mesh
+    /// @details ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½levelsetï¿½Ø¹ï¿½ï¿½ã·¨ÊµÊ©
     /// 
     OVDBUTIL_API trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh, 
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 
-    /// @brief  ¿Õº¯Êý£¬ÄÚ²¿ÎÞ´úÂë
-    OVDBUTIL_API void hollowMesh(trimesh::TriMesh* mesh,
+    /// @brief  ï¿½Õºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½Þ´ï¿½ï¿½ï¿½
+    OVDBUTIL_API trimesh::TriMesh* hollowMesh(trimesh::TriMesh* mesh,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 
  /**
-    *ÓÃÓÚ½«Ò»¸ömeshµÄstlµÄÎÄ¼þÊäÈë£¬ ÔÙ³é¿Ç
-    *\param TriMesh ÊäÈëÄ£ÐÍ
+    *ï¿½ï¿½ï¿½Ú½ï¿½Ò»ï¿½ï¿½meshï¿½ï¿½stlï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ë£¬ ï¿½Ù³ï¿½ï¿½
+    *\param TriMesh ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½
     *\param HollowingParameter
     *\param Tracer
-    *\return TriMesh Êä³öÄ£ÐÍ
-    *\todo ´Ë½Ó¿ÚÓÐ³é¿ÇºÍÌî³äµÄ¹¦ÄÜ£¬ÊÇ·ñ²úÉúÄÚ²¿Ìî³ä£¬ÓÉINNER_FILL_CONFIG½á¹¹µÄenable¿ØÖÆ
+    *\return TriMesh ï¿½ï¿½ï¿½Ä£ï¿½ï¿½
+    *\todo ï¿½Ë½Ó¿ï¿½ï¿½Ð³ï¿½Çºï¿½ï¿½ï¿½ï¿½Ä¹ï¿½ï¿½Ü£ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ä£¬ï¿½ï¿½INNER_FILL_CONFIGï¿½á¹¹ï¿½ï¿½enableï¿½ï¿½ï¿½ï¿½
 */
-///   @warning Õâ¸öÌåËØ·¨»á¸Ä±äÔ­À´Ä£ÐÍ¾Ö²¿mesh½á¹¹£¬Ê¹Ö®¸ü¼ÓÔ²Èó£¬ÌåËØ·¨±¾ÖÊ¾ö¶¨µÄ£¬¿ÉÊÓ»¯ºó¿ÉÒÔ¿´µ½Èý½ÇÃæ±È½ÏµÄÏ¸Ëé¡£
-///     ´´½¨Ò»¸ö²âÊÔhollowMeshAndFill³é¿ÇµÄAPI½Ó¿ÚµÄº¯Êý£¬ÕæÕýµÄgenerateInteriorº¯Êý³é¿ÇÀïÃæmeshºÍÔ­À´µÄÊäÈëµÄmesh£¬ÕâÑùÊµ¼ÊÉÏ²ÅÊÇÒ»¸öÓÐºñ¶ÈµÄ¿Ç
+///   @warning ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½Ä±ï¿½Ô­ï¿½ï¿½Ä£ï¿½Í¾Ö²ï¿½meshï¿½á¹¹ï¿½ï¿½Ê¹Ö®ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½ï¿½ï¿½ï¿½Ø·ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½Ó»ï¿½ï¿½ï¿½ï¿½ï¿½Ô¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È½Ïµï¿½Ï¸ï¿½é¡£
+///     ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½hollowMeshAndFillï¿½ï¿½Çµï¿½APIï¿½Ó¿ÚµÄºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½generateInteriorï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½meshï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½meshï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ï²ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ðºï¿½ÈµÄ¿ï¿½
     OVDBUTIL_API trimesh::TriMesh* hollowMeshAndFill(trimesh::TriMesh* mesh,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 
-    /// @brief generateInfillº¯Êý×öÎªÉÏÃæº¯ÊýµÄ»ù´¡º¯Êý£¬ÔÚÍê³É³é¿ÇÖ®ºó£¬ÔÚ³é¿ÕµÄ¿Õ¼äÇøÓò£¬Ìî³äÏ¸Ð¡µÄÔ²Öù£¬Ô²ÖùµÄ²ÎÊýÔÚINNER_FILL_CONFIGÖÐ
+    /// @brief generateInfillï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½æº¯ï¿½ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É³ï¿½ï¿½Ö®ï¿½ï¿½ï¿½Ú³ï¿½ÕµÄ¿Õ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸Ð¡ï¿½ï¿½Ô²ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½INNER_FILL_CONFIGï¿½ï¿½
 	OVDBUTIL_API std::vector<trimesh::TriMesh*> generateInfill(trimesh::TriMesh* mesh, const trimesh::vec3& normal,
 		const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
+
+    OVDBUTIL_API trimesh::TriMesh* hollowPrecisionMeshAndFill(trimesh::TriMesh* mesh,
+        const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
+
+    OVDBUTIL_API trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh,const std::vector<int>& selectfaces,
+        const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 }
 
 #endif // OVDBUTIL_HOLLOWING_1650957593077_H
