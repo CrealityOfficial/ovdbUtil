@@ -13,4 +13,12 @@
 		#define OVDBUTIL_API CC_DECLARE_STATIC
 	#endif
 #endif
+
+#include "trimesh2/TriMesh.h"
+#include "trimesh2/XForm.h"
+#include <memory>
+
+namespace ovdbutil {
+	typedef std::shared_ptr<trimesh::TriMesh> DBMeshPtr;
+}
 #endif // OVDBUTIL_INTERFACE_1604911737496_H

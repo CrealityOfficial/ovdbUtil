@@ -313,8 +313,9 @@ __files_group(${CMAKE_CURRENT_SOURCE_DIR}/include/ H1)
 __files_group(${CMAKE_CURRENT_SOURCE_DIR}/src/ S1)
 list(APPEND SRCS ${H1} ${S1})			
 		
+__assert_target(msbase)
 list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-list(APPEND LIBS openvdb topomesh)
+list(APPEND LIBS openvdb topomesh msbase)
 set(ILIBS trimesh2 )
 
 __add_common_library(ovdbutil)
