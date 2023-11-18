@@ -1,6 +1,7 @@
 #include "ovdbutil/hollowing.h"
 
-#include "util.h"
+#include "util/gridhelper.h"
+#include "util/tracer.h"
 
 #include "mesh/trimeshutil.h"
 #include "mesh/createcylinder.h"
@@ -142,18 +143,7 @@ namespace ovdbutil
         float  out_range = 0.03f * float(offset);
         float  in_range = 1.9f * float(offset + D);
         
-        if (tracer && tracer->interrupt())
-            return nullptr;
-
-        if (tracer)
-        {
-            tracer->progress(0.15f);
-            if (tracer->interrupt())
-            {
-                return nullptr;
-            }
-        }
-
+        TracerInterrupter interrupter(tracer);
 
         //bug for param flags: hollow Optimization 
        openvdb::math::Transform::Ptr transform = openvdb::math::Transform::createLinearTransform(1.0);
@@ -200,7 +190,8 @@ namespace ovdbutil
         trimesh::remove_unused_vertices(mesh);*/
        
        // newmesh->write("vertex.ply");
-        openvdb::FloatGrid::Ptr gridptr1 = mesh_to_grid(newmesh, *transform, 3.0, 3.0f, voxel_size, 0xE, tracer);
+        openvdb::FloatGrid::Ptr gridptr1 = mesh_to_grid(interrupter, 
+            newmesh, *transform, 3.0, 3.0f, voxel_size, 0xE);
         //typename openvdb::FloatGrid::Accessor accessor1 = gridptr1->getAccessor();
        
         std::cout << "back ground : " << gridptr1->background() << "\n";
@@ -431,7 +422,7 @@ namespace ovdbutil
         //double iso_surface = D;
         double iso_surface = 0.;
         double adaptivity = 0.;
-        auto omesh = grid_to_mesh(*grid, iso_surface, adaptivity, true);
+        auto omesh = grid_to_mesh(grid, iso_surface, adaptivity, true);
         omesh->write("omesh.ply");
         std::vector<bool> delomesh(omesh->faces.size(), false);       
         for (int fi = 0; fi < omesh->faces.size(); fi++)
@@ -722,16 +713,8 @@ namespace ovdbutil
         float  out_range = 0.03f * float(offset);
         float  in_range = 1.9f * float(offset + D);
 
-        if (tracer && tracer->interrupt())
-            return nullptr;
-        if (tracer)
-        {
-            tracer->progress(0.15f);
-            if (tracer->interrupt())
-            {
-                return nullptr;
-            }
-        }
+        TracerInterrupter interrupter(tracer);
+
         openvdb::math::Transform::Ptr transform = openvdb::math::Transform::createLinearTransform(1.0f / (parameter.precision * 1.0f));
         std::vector<openvdb::math::Vec3s> cube_points;
         std::vector<openvdb::math::Coord::Vec3I> cube_faces;
@@ -745,7 +728,8 @@ namespace ovdbutil
             cube_faces.push_back(openvdb::math::Coord::Vec3I(mesh->faces.at(i).x, mesh->faces.at(i).y, mesh->faces.at(i).z));
         }
         openvdb::tools::QuadAndTriangleDataAdapter<openvdb::math::Vec3s, openvdb::math::Coord::Vec3I> mesh_a(cube_points, cube_faces);
-        openvdb::FloatGrid::Ptr gridptr = openvdb::tools::meshToVolume<openvdb::FloatGrid>(mesh_a, *transform, out_range, in_range, parameter.voxel_size, 0xE, tracer);
+        openvdb::FloatGrid::Ptr gridptr = openvdb::tools::meshToVolume<openvdb::FloatGrid>(interrupter, 
+            mesh_a, *transform, out_range, in_range, parameter.voxel_size, 0xE);
         if (!gridptr) {
             if (tracer)
                 tracer->failed("Returned OpenVDB grid is NULL");
@@ -764,7 +748,7 @@ namespace ovdbutil
 
         double iso_surface = D;
         double adaptivity = 0.;
-        trimesh::TriMesh* hollowMesh = grid_to_mesh(*gridptr, iso_surface, adaptivity, false);
+        trimesh::TriMesh* hollowMesh = grid_to_mesh(gridptr, iso_surface, adaptivity, false);
 
         if (tracer && tracer->interrupt())
             return nullptr;

@@ -249,10 +249,11 @@
 #elif USE_OPENVDB_STATIC
     #define OPENVDB_IMPORT CC_DECLARE_STATIC
 #else
-    #if OPENVDB_DLL
+    #ifdef OPENVDB_DLL
         #define OPENVDB_EXPORT CC_DECLARE_EXPORT
     #else
         #define OPENVDB_EXPORT CC_DECLARE_STATIC
+        #define OPENVDB_IMPORT CC_DECLARE_STATIC
     #endif
 #endif
 

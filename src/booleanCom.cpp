@@ -2,7 +2,7 @@
 #include "openvdb/tools/TopologyToLevelSet.h"
 #include "openvdb/tools/Morphology.h"
 #include <openvdb/tools/Composite.h>
-#include "util.h"
+#include "util/gridhelper.h"
 #include "openvdb/tools/LevelSetUtil.h"
 #include "ccglobal/tracer.h"
 
@@ -78,7 +78,7 @@ namespace ovdbutil
             tracer->progress(1.0f);
         double iso_surface = 0.;
         double adaptivity = 0.;
-        auto omesh = ovdbutil::grid_to_mesh(*grid, iso_surface, adaptivity, false);
+        auto omesh = ovdbutil::grid_to_mesh(grid, iso_surface, adaptivity, false);
 
         return omesh;
     }
@@ -169,7 +169,7 @@ namespace ovdbutil
             tracer->progress(1.0f);
         double iso_surface = 0.;
         double adaptivity = 0.;
-        auto omesh = ovdbutil:: grid_to_mesh(*gridptr1, iso_surface, adaptivity, false);
+        auto omesh = ovdbutil:: grid_to_mesh(gridptr1, iso_surface, adaptivity, false);
 
         return omesh;
     }
@@ -278,7 +278,7 @@ namespace ovdbutil
             tracer->progress(1.0f);
         double iso_surface = 0.;
         double adaptivity = 0.;
-        auto omesh = ovdbutil::grid_to_mesh(*gridptr1, iso_surface, adaptivity, false);
+        auto omesh = ovdbutil::grid_to_mesh(gridptr1, iso_surface, adaptivity, false);
 
         return omesh;
     }
@@ -404,7 +404,7 @@ namespace ovdbutil
             tracer->progress(1.0f);
         double iso_surface = 0;
         double adaptivity = 0.;
-        auto omesh = ovdbutil::grid_to_mesh(*lsGrid, iso_surface, adaptivity, false);
+        auto omesh = ovdbutil::grid_to_mesh(lsGrid, iso_surface, adaptivity, false);
 
         return omesh;
     }

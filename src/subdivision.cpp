@@ -1,10 +1,10 @@
 #include "ovdbutil/subdivision.h"
 
-#include "util.h"
-#include "ccglobal/tracer.h"
+#include "util/gridhelper.h"
+#include "util/tracer.h"
+
+#include <openvdb/tools/MeshToVolume.h>
 #include <openvdb/tools/RayIntersector.h>
-#include <openvdb/math/Vec3.h>
-#include <openvdb/math/Coord.h>
 #include "openvdb/tools/TopologyToLevelSet.h"
 
 namespace ovdbutil
@@ -27,7 +27,7 @@ namespace ovdbutil
         openvdb::FloatGrid::Ptr subgrid = openvdb::tools::meshToVolume<openvdb::FloatGrid>(mesh_b, *xform);
          double iso_surface =0.;
          double adaptivity = 0.;
-         auto omesh = grid_to_mesh(*subgrid, iso_surface, adaptivity, false);
+         auto omesh = grid_to_mesh(subgrid, iso_surface, adaptivity, false);
 
         return omesh;
     }
@@ -52,7 +52,7 @@ namespace ovdbutil
         subgrid = openvdb::tools::topologyToLevelSet(*subgrid, 3, 1, w, 3);   //extent    smooth steps
         double iso_surface = 0.;
         double adaptivity = 0.;
-        auto omesh = grid_to_mesh(*subgrid, iso_surface, adaptivity, false);
+        auto omesh = grid_to_mesh(subgrid, iso_surface, adaptivity, false);
 
         return omesh;
     }

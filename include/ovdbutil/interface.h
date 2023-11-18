@@ -16,6 +16,7 @@
 
 #include "trimesh2/TriMesh.h"
 #include "trimesh2/XForm.h"
+#include "ccglobal/tracer.h"
 #include <memory>
 
 namespace ovdbutil {

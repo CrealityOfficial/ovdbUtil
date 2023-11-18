@@ -306,7 +306,10 @@ __add_real_target(openvdb lib SOURCE ${OVDB_SRCS}
 							  INC ${INCS}
 							  DEF ${DEFS}
 							  LIB ${LIBS}
+							  ILIB boost_header tbb
 							  INTERFACE ${INCS}
+							  INTERFACE_DEF OPENVDB_STATICLIB
+							  FOLDER openvdb
 							  )
 			
 __files_group(${CMAKE_CURRENT_SOURCE_DIR}/include/ H1)
@@ -318,7 +321,7 @@ list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 list(APPEND LIBS openvdb topomesh msbase)
 set(ILIBS trimesh2 )
 
-__add_common_library(ovdbutil)
+__add_common_library(ovdbutil FOLDER openvdb)
 
 if(CC_INSTALL_OVDBUTIL)
 	__install_directory_specif(${CMAKE_CURRENT_SOURCE_DIR}/include/ ovdbutil)

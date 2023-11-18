@@ -118,7 +118,6 @@ meshToVolume(
   float exteriorBandWidth = 3.0f,
   float interiorBandWidth = 3.0f, double voxel_size=1.0,
   int flags = 0, 
-  ccglobal::Tracer* tracer = nullptr,
   typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid = nullptr);
 
 
@@ -146,7 +145,6 @@ meshToVolume(
     float exteriorBandWidth = 3.0f,
     float interiorBandWidth = 3.0f, double voxel_size=1.0,
     int flags = 0,
-    ccglobal::Tracer* tracer = nullptr,
     typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid = nullptr);
 
 
@@ -3131,9 +3129,8 @@ meshToVolume(
     const math::Transform& transform,
     float exteriorBandWidth,
     float interiorBandWidth, double voxel_size,
-  int flags,
-    ccglobal::Tracer* tracer,
-  typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid)
+    int flags,
+    typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid)
 {
     using GridTypePtr = typename GridType::Ptr;
     using TreeType = typename GridType::TreeType;
@@ -3145,15 +3142,6 @@ meshToVolume(
 
     using BoolTreeType = typename TreeType::template ValueConverter<bool>::Type;
 
-    //////////
-    if (tracer)
-    {
-        tracer->progress(0.20f);
-        if (tracer->interrupt())
-        {
-            return nullptr;
-        }
-    }
     // Setup
 
     GridTypePtr distGrid(new GridType(std::numeric_limits<ValueType>::max()));
@@ -3205,15 +3193,6 @@ meshToVolume(
         indexGrid = temporaryIndexGrid.get();
     }
 
-    if (tracer)
-    {
-        tracer->progress(0.3f);
-        if (tracer->interrupt())
-        {
-            return nullptr;
-        }
-    }
-
     indexGrid->newTree();
     indexGrid->setTransform(transform.copy());
 
@@ -3245,21 +3224,12 @@ meshToVolume(
         tbb::parallel_for(polygonRange, Voxelizer(data, mesh, &interrupter));
 
         float fstep = 1.0f;
-        int cnt = 1;
         int size = data.end() - data.begin();
         if (size)
         {
             fstep = 0.2 / size;
         }
         for (typename DataTable::iterator i = data.begin(); i != data.end(); ++i) {
-            if (tracer)
-            {
-                tracer->progress(0.31f + fstep * cnt++);
-                if (tracer->interrupt())
-                {
-                    return nullptr;
-                }
-            }
 
             VoxelizationDataType& dataItem = **i;
             mesh_to_volume_internal::combineData(
@@ -3309,15 +3279,6 @@ meshToVolume(
         }
     }
 
-    if (tracer)
-    {
-        tracer->progress(0.6f);
-        if (tracer->interrupt())
-        {
-            return nullptr;
-        }
-    }
-
     if (interrupter.wasInterrupted(50)) return distGrid;
 
     if (distTree.activeVoxelCount() == 0) {
@@ -3346,16 +3307,6 @@ meshToVolume(
     }
 
     if (interrupter.wasInterrupted(54)) return distGrid;
-
-    if (tracer)
-    {
-        tracer->progress(0.65f);
-        if (tracer->interrupt())
-        {
-            return nullptr;
-        }
-    }
-    //////////
 
     // Expand the narrow band region
 
@@ -3418,16 +3369,6 @@ meshToVolume(
 
     if (!polygonIndexGrid) indexGrid->clear();
 
-    if (tracer)
-    {
-        tracer->progress(0.7f);
-        if (tracer->interrupt())
-        {
-            return nullptr;
-        }
-    }
-    /////////
-
     // Renormalize distances to smooth out bumps caused by self intersecting
     // and overlapping portions of the mesh and renormalize the level set.
 
@@ -3458,17 +3399,6 @@ meshToVolume(
 
     if (interrupter.wasInterrupted(99)) return distGrid;
 
-
-    /////////
-    if (tracer)
-    {
-        tracer->progress(0.75f);
-        if (tracer->interrupt())
-        {
-            return nullptr;
-        }
-    }
-
     // Remove active voxels that exceed the narrow band limits
 
     if (trimNarrowBand && std::min(interiorWidth, exteriorWidth) < voxelSize * ValueType(4.0)) {
@@ -3496,13 +3426,12 @@ meshToVolume(
     const math::Transform& transform,
     float exteriorBandWidth,
     float interiorBandWidth, double voxel_size,
-  int flags,
-    ccglobal::Tracer* tracer,
-  typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid)
+    int flags,
+    typename GridType::template ValueConverter<Int32>::Type * polygonIndexGrid)
 {
     util::NullInterrupter nullInterrupter;
     return meshToVolume<GridType>(nullInterrupter, mesh, transform,
-        exteriorBandWidth, interiorBandWidth,  voxel_size, flags, tracer,polygonIndexGrid);
+        exteriorBandWidth, interiorBandWidth,  voxel_size, flags, polygonIndexGrid);
 }
 
 
