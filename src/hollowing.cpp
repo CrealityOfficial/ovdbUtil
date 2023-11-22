@@ -8,7 +8,8 @@
 #include "mesh/createcylinder.h"
 #include "mesh/ray.h"
 #include "mesh/adjacentoctree.h"
-
+#include "msbase/mesh/get.h"
+#include "../topomesh/internal/alg/volumeMesh.h"
 #include "topomesh/interface/subdivision.h"
 #include "internal/alg/fillhoneycombs.h"
 #include "topomesh/interface/utils.h"
@@ -17,14 +18,11 @@
 #include "trimesh2/TriMesh_algo.h"
 #include <openvdb/math/Vec3.h>
 #include <openvdb/math/Coord.h>
-#include <openvdb/tools/LevelSetSphere.h>
-#include <openvdb/tools/Clip.h>
 #include <openvdb/tools/ValueTransformer.h>
 #include <openvdb/tools/MeshToVolume.h>
-#include <openvdb/tools/Mask.h>
-#include <openvdb/tools/Composite.h>
 #include <openvdb/tools/GridTransformer.h>
-#include <openvdb/tools/LevelSetUtil.h>
+#include <openvdb/tools/Composite.h>
+#include <queue>
 
 
 
@@ -33,12 +31,67 @@ namespace ovdbutil
     trimesh::TriMesh* hollowMesh(trimesh::TriMesh* mesh,
         const HollowParameter& parameter, ccglobal::Tracer* tracer)
     {
-        return nullptr;
+        ovdbutil::HollowingParameter param;
+        param.min_thickness = parameter.thickness;
+        switch (parameter.precision)
+        {
+        case OutPrecesion::COARSE:
+            param.precision = 1;
+            break;
+        case OutPrecesion::NORMAL:
+            param.precision = 2;
+            break;
+        case OutPrecesion::ELABORATE:
+            param.precision = 3;
+            break;
+        case OutPrecesion::EXTREME:
+            param.precision = 4;
+            break;
+        }
+        param.remain_main_shell = parameter.remain_main_shell;
+        param.filter_tiny_shell = parameter.filter_tiny_shell;
+        param.filter_shell = parameter.filter_shell;
+        switch (parameter.style)
+        {
+        case HollowStyle::hs_none:
+            param.fill_config.enable = false;
+            break;
+        case HollowStyle::hs_infill_grid:
+            param.fill_config.enable = true;
+            param.fill_config.fillratio = parameter.fill_ratio;
+            break;
+            //-----empty----
+        case HollowStyle::hs_self_support:
+            param.fill_config.enable = false;
+            break;
+        }
+        trimesh::TriMesh* hollowMesh = ovdbutil::hollowPrecisionMeshAndFill(mesh, param, tracer);
+        FindShellVolume(hollowMesh,param.filter_tiny_shell, param);       
+        return hollowMesh;
     }
 
     trimesh::TriMesh* shellMesh(trimesh::TriMesh* mesh, const ShellParameter& parameter, ccglobal::Tracer* tracer)
     {
-        return nullptr;
+        ovdbutil::HollowingParameter param;
+        param.min_thickness = parameter.thickness;
+        switch (parameter.precision)
+        {
+        case OutPrecesion::COARSE:
+            param.precision = 1;
+            break;
+        case OutPrecesion::NORMAL:
+            param.precision = 2;
+            break;
+        case OutPrecesion::ELABORATE:
+            param.precision = 3;
+            break;
+        case OutPrecesion::EXTREME:
+            param.precision = 4;
+            break;
+        }
+        std::vector<int> faces = parameter.faces;
+        trimesh::TriMesh* hollowMesh = SelectFacesHollow(mesh, faces,param,tracer);
+        return hollowMesh;
     }
 
     openvdb::FloatGrid::Ptr redistance_grid(const openvdb::FloatGrid& grid, double iso, double er = 3.0, double ir = 3.0)
@@ -179,11 +232,11 @@ namespace ovdbutil
         trimesh::TriMesh* newmesh = new trimesh::TriMesh();
         *newmesh = *mesh;
         std::vector<int> selectfaces;
-        topomesh::findNeignborFacesOfSameAsNormal(newmesh, 80319, 1.f, selectfaces);
+       // topomesh::findNeignborFacesOfSameAsNormal(newmesh, 80319, 1.f, selectfaces);
        
         std::vector<bool> delfaces(newmesh->faces.size(),false);
         std::vector<bool> markvexter(newmesh->vertices.size(),false);
-        float z;
+        float zi;
         for (int fi : selectfaces)
         {
             delfaces[fi] = true;
@@ -193,7 +246,7 @@ namespace ovdbutil
                 if (!markvexter[v])
                 {
                     markvexter[v] = true;
-                    z = newmesh->vertices[v].z;
+                    zi = newmesh->vertices[v].z;
                     newmesh->vertices[v].z = newmesh->vertices[v].z - 1.0f;
                 }
             }
@@ -206,6 +259,10 @@ namespace ovdbutil
             newmesh, *transform, 3.0, 3.0f, voxel_size, 0xE);
         //typename openvdb::FloatGrid::Accessor accessor1 = gridptr1->getAccessor();
        
+
+        auto tmesh = grid_to_mesh(gridptr1, 0., 0., true);
+        tmesh->write("tmesh.ply");
+
         std::cout << "back ground : " << gridptr1->background() << "\n";
         
        /* openvdb::BoolGrid::Ptr boolptr = openvdb::BoolGrid::create();
@@ -269,8 +326,8 @@ namespace ovdbutil
         std::cout << "padding : " << padding << "\n";
         
         std::cout << " grid->voxelSize() : " << grid->voxelSize() << "\n";
-        int dim = int(3.f + padding);
-        typename openvdb::FloatGrid::Accessor accessor = grid->getAccessor();
+        int dim = int(10.f + padding);
+        typename openvdb::FloatGrid::Accessor accessor = gridptr1->getAccessor();
         openvdb::Coord ijk;
         int& i = ijk[0], & j = ijk[1], & k = ijk[2];
         std::cout << "i : " << i << " j : " << j << " k : " << k << "\n";
@@ -287,19 +344,18 @@ namespace ovdbutil
                 const float disty2 = openvdb::math::Pow2(j + 10.f);
                 const float disty = std::min(disty1, disty2);*/
                 for (k = c[2]-dim ; k < c[2] + dim; ++k) {                   
-                   /* const float dist = openvdb::math::Sqrt(x2y2
-                        + openvdb::math::Pow2(k - c[2])) - 3.f;   
-                   
+                    const float dist = openvdb::math::Sqrt(x2y2
+                        + openvdb::math::Pow2(k - c[2])) - 10.f;                     
                     ValueT val = ValueT(dist);                                   
                     if (val < inside || outside < val) continue;                   
-                    accessor.setValue(ijk, val);*/
-                    if (k == 0)
+                    accessor.setValue(ijk, val);
+                  /*  if (k == 0)
                     {
                         const float dist = openvdb::math::Sqrt(x2y2) - 3.f;                      
                         ValueT val = ValueT(dist);
                         if ( outside < val) continue;
                         accessor.setValue(ijk, val);
-                    }
+                    }*/
                    /* ValueT val = ValueT(i&j);
                     if (val < inside || outside < val) continue;
                     accessor.setValue(ijk, val);*/
@@ -307,11 +363,83 @@ namespace ovdbutil
                 }
             }
         }
-        openvdb::tools::signedFloodFill(grid->tree());
-        ValueT backgound = grid->background();      
-        std::cout << "bbox : " << grid->evalActiveVoxelBoundingBox() << "\n";
-        openvdb::Coord box1 = grid->evalActiveVoxelBoundingBox().getStart();
-        openvdb::Coord box2 = grid->evalActiveVoxelBoundingBox().getEnd();
+        openvdb::tools::signedFloodFill(gridptr1->tree());
+        ValueT backgound = gridptr1->background();
+        std::cout << "bbox : " << gridptr1->evalActiveVoxelBoundingBox() << "\n";
+        openvdb::Coord box1 = gridptr1->evalActiveVoxelBoundingBox().getStart();
+        openvdb::Coord box2 = gridptr1->evalActiveVoxelBoundingBox().getEnd();
+      
+        std::vector<std::pair<int, int>> bone;
+        openvdb::Coord topc;
+        int& x = topc[0], & y = topc[1], & z = topc[2];
+        z = (int)box2.z() -3;
+        //-----y----------
+        for (x = box1.x(); x <= box2.x(); ++x) {
+            int yy = 0, n = 0;
+            for (y = box1.y(); y <= box2.y(); ++y) {
+                if (accessor.getValue(topc) != backgound)
+                {
+                    yy += y;
+                    n++;
+                    openvdb::Coord next(x, y + 1, z);
+                    if (accessor.getValue(next) == backgound)
+                    {
+                        int c = (int)(yy / n);
+                        bone.push_back(std::make_pair(x, c));
+                        yy = 0; n = 0;
+                    }
+                }
+            }
+        }
+        //-----------x------------
+        for (y = box1.y(); y <= box2.y(); ++y) {
+            int xx = 0, n = 0;
+            for (x = box1.x(); x <= box2.y(); ++x) {
+                if (accessor.getValue(topc) != backgound)
+                {
+                    std::cout << "* ";
+                    xx += x;
+                    n++;
+                    openvdb::Coord next(x + 1, y, z);
+                    if (accessor.getValue(next) == backgound)
+                    {
+                        int c = (int)(xx / n);
+                        bone.push_back(std::make_pair(c, y));
+                        xx = 0; n = 0;
+                    }
+                }
+                else {
+                    std::cout << "0 ";
+                }
+            }
+            std::cout << "\n";
+        }
+        std::cout << "\n";
+        std::cout << "\n";
+        for (int ii = box1.y(); ii <= box2.y(); ii++)
+        {
+            for (int jj = box1.x(); jj < box2.x(); jj++)
+            {
+                bool prift = false;
+                for (int v = 0; v < bone.size(); v++)
+                {
+                    if (bone[v].first == jj && bone[v].second == ii)
+                    {
+                        prift = true;
+                        // std::cout << "* ";
+                        break;
+                    }
+                }
+                if (prift)
+                    std::cout << "* ";
+                else
+                    std::cout << "0 ";
+            }
+            std::cout << "\n";
+        }
+
+
+
         openvdb::Coord ijk1;
         int& i1 = ijk1[0], & j1 = ijk1[1], & k1 = ijk1[2];
         for (k1 = box2.z(); k1 >box2.z()-1; --k1) {
@@ -504,12 +632,150 @@ namespace ovdbutil
         return omesh;
     }
 
-    trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh, const std::vector<int>& selectfaces,
+    trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh, std::vector<int>& selectfaces,
         const HollowingParameter& parameter, ccglobal::Tracer* tracer)
     {
-        trimesh::TriMesh* resultmesh;
+       /* std::vector<int> selectfacesc;
+        topomesh::findNeignborFacesOfSameAsNormal(mesh, 55011, 1.f, selectfacesc);
+        selectfaces.swap(selectfacesc);*/
 
-        return resultmesh;
+        trimesh::point ave_normal(0,0,0);
+        for (int fi : selectfaces)
+        {
+            trimesh::point normal = msbase::getFaceNormal(mesh, fi);
+            ave_normal += normal;
+        }
+        ave_normal /= selectfaces.size();
+        trimesh::normalize(ave_normal);
+
+
+        trimesh::TriMesh* copymesh = new trimesh::TriMesh();
+        *copymesh = *mesh;
+        float extend = 2.*parameter.min_thickness;
+        std::vector<bool> markvexter(copymesh->vertices.size(), false);
+        for (int fi : selectfaces)
+        {
+            for (int vi = 0; vi < 3; vi++)
+            {
+                int v = copymesh->faces[fi][vi];
+                if (!markvexter[v])
+                {
+                    markvexter[v] = true;
+                    copymesh->vertices[v]= copymesh->vertices[v] + extend* ave_normal;
+                }
+            }
+        }
+       /* std::vector<bool> delfaces(mesh->faces.size(),false);
+        for (int i : selectfaces)
+            delfaces[i] = true;
+        trimesh::remove_faces(mesh, delfaces);
+        trimesh::remove_unused_vertices(mesh);*/
+
+        trimesh::fxform&& mat = trimesh::fxform::rot_into(ave_normal, trimesh::vec3(0,0,-1));
+        for (trimesh::point& p : mesh->vertices)        
+            p =  mat*p;       
+        mesh->clear_bbox();
+        mesh->need_bbox();
+        trimesh::vec3 trans = mesh->bbox.min;
+        float min_z = mesh->bbox.min.z;
+        for (trimesh::point& p : mesh->vertices)
+            p.z = p.z - min_z;
+
+        trimesh::TriMesh* returnmesh = hollowMesh(copymesh, parameter, tracer);
+        std::vector<bool> delvertex(returnmesh->vertices.size(),false);
+        for (trimesh::point& p : returnmesh->vertices)
+        {
+            p = mat * p;
+            p.z = p.z - min_z;
+        }
+
+        trimesh::box2 box;
+        box.min.x = std::numeric_limits<float>::max();
+        box.min.y = std::numeric_limits<float>::max();
+        box.max.x = std::numeric_limits<float>::min();
+        box.max.y = std::numeric_limits<float>::min();
+        for (int i : selectfaces)
+        {
+            for (int vi = 0; vi < 3; vi++)
+            {
+                float vx = mesh->vertices[mesh->faces[i][vi]].x;
+                float vy = mesh->vertices[mesh->faces[i][vi]].y;
+                if (vx < box.min.x)
+                    box.min.x = vx;
+                if (vx > box.max.x)
+                    box.max.x = vx;
+                if (vy < box.min.y)
+                    box.min.y = vy;
+                if (vy > box.max.y)
+                    box.max.y = vy;
+            }
+        }
+
+        for (int vi=0;vi<returnmesh->vertices.size();vi++)
+        {
+            trimesh::point v = returnmesh->vertices[vi];
+            if (v.x<box.max.x && v.x>box.min.x && v.y<box.max.y && v.y>box.min.y && v.z > -1.2*extend && v.z < 0.5f)
+            {
+                if (v.z < 0.f)
+                    delvertex[vi] = true;
+            }
+        }
+
+        //std::vector<bool> del_faces(returnmesh->faces.size(), false);
+        trimesh::remove_vertices(returnmesh,delvertex);
+        trimesh::remove_sliver_faces(returnmesh);
+        returnmesh->clear_adjacentfaces();
+        returnmesh->clear_neighbors();
+        returnmesh->need_adjacentfaces();
+        returnmesh->need_neighbors();
+        for (int vi = 0; vi < returnmesh->vertices.size(); vi++)
+        {
+            if (returnmesh->adjacentfaces[vi].size() != returnmesh->neighbors[vi].size())
+                returnmesh->vertices[vi].z = 0.f;
+        }
+
+        topomesh::JointBotMesh(mesh,returnmesh,selectfaces);
+
+        trimesh::trans(returnmesh, trans);
+        trimesh::apply_xform(returnmesh, trimesh::xform::rot_into(trimesh::vec3(0, 0, -1), ave_normal));
+        //returnmesh->write("resultmesh.ply");
+        return returnmesh;
+    }
+
+    bool CheckConnectChunk(trimesh::TriMesh* mesh, std::vector<std::vector<int>>& chunks, std::vector<int>& block)
+    {
+        mesh->need_across_edge();
+        bool result=true;
+        std::vector<int> container;
+        int size = 0;
+        for (int i = 0; i < chunks.size(); i++)
+        {
+            size += chunks[i].size();
+            std::vector<int> temp(container);
+            container.insert(container.end(), chunks[i].begin(),chunks[i].end());
+            std::set<int> filter(container.begin(),container.end());
+            container.assign(filter.begin(), filter.end());
+            if (size == container.size()&&i!=0)
+            {
+                std::vector<bool> mark(mesh->faces.size(), false);
+                for (int fi = 0; fi < chunks[i].size(); fi++)
+                    mark[chunks[i][fi]] = true;
+                for (int fi = 0; fi < temp.size(); fi++)
+                {
+                    if (mark[mesh->across_edge[temp[fi]][0]] || mark[mesh->across_edge[temp[fi]][1]] || mark[mesh->across_edge[temp[fi]][2]])
+                    {
+                        break;
+                    }
+                }
+                result = false;
+            }
+            else if (size < container.size())
+            {
+                size = container.size();
+            }
+        }
+        block.swap(container);
+        return result;
     }
 
     trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh, 
@@ -717,7 +983,7 @@ namespace ovdbutil
 
     trimesh::TriMesh* hollowMesh(trimesh::TriMesh* mesh,
         const HollowingParameter& parameter, ccglobal::Tracer* tracer)
-    {
+    {      
         float min_thickness = parameter.min_thickness * parameter.precision * 1.0f;
         double voxel_scale = parameter.voxel_size_inout_range;
         double offset = voxel_scale * min_thickness;
@@ -742,6 +1008,8 @@ namespace ovdbutil
         openvdb::tools::QuadAndTriangleDataAdapter<openvdb::math::Vec3s, openvdb::math::Coord::Vec3I> mesh_a(cube_points, cube_faces);
         openvdb::FloatGrid::Ptr gridptr = openvdb::tools::meshToVolume<openvdb::FloatGrid>(interrupter, 
             mesh_a, *transform, out_range, in_range, parameter.voxel_size, 0xE);
+
+
         if (!gridptr) {
             if (tracer)
                 tracer->failed("Returned OpenVDB grid is NULL");
@@ -760,7 +1028,7 @@ namespace ovdbutil
 
         double iso_surface = D;
         double adaptivity = 0.;
-        trimesh::TriMesh* hollowMesh = grid_to_mesh(gridptr, iso_surface, adaptivity, false);
+        trimesh::TriMesh* hollowMesh = grid_to_mesh(gridptr, iso_surface, adaptivity, false);       
 
         if (tracer && tracer->interrupt())
             return nullptr;
@@ -769,5 +1037,87 @@ namespace ovdbutil
             tracer->progress(0.95f);
 
         return hollowMesh;
+    }
+
+    void FindShellVolume(trimesh::TriMesh* mesh, float volume, const HollowParameter& parameter)
+    {
+        if (!mesh)
+            return;
+        mesh->clear_across_edge();
+        mesh->need_across_edge();
+        std::vector<bool> mark(mesh->faces.size(), false);
+        std::vector<std::vector<int>> vol_container;
+        int p = 0;
+        bool pass = true;
+        while (pass)
+        {
+            std::queue<int> facequeue;
+            facequeue.push(p);
+            std::vector<int> result;
+            while (!facequeue.empty())
+            {
+                if (facequeue.front() == -1 || mark[facequeue.front()])
+                {
+                    facequeue.pop();
+                    continue;
+                }
+                mark[facequeue.front()] = true;
+                result.push_back(facequeue.front());
+                for (int i = 0; i < mesh->across_edge[facequeue.front()].size(); i++)
+                {
+                    int face = mesh->across_edge[facequeue.front()][i];
+                    if (face == -1 || mark[face]) continue;
+                    facequeue.push(face);
+                }
+                facequeue.pop();
+            }
+           /* float vol = topomesh::getMeshVolume(mesh, result);
+            vol = std::abs(vol);
+            if (vol <= volume)
+            {
+                del.insert(del.end(),result.begin(),result.end());
+            }*/
+            vol_container.push_back(result);
+            int fi = 0;
+            for (; fi < mesh->faces.size(); fi++)
+            {
+                if (!mark[fi])
+                {
+                    p = fi; break;
+                }
+            }
+            if (fi == mesh->faces.size())
+                pass = false;
+        }
+        if (parameter.remain_main_shell)
+        {
+            std::sort(vol_container.begin(), vol_container.end(), [&](std::vector<int>& a, std::vector<int>& b)->bool
+                {
+                    float va = topomesh::getMeshVolume(mesh, a);
+                    float vb = topomesh::getMeshVolume(mesh, b);
+                    return va > vb;
+                });
+            std::vector<bool> delfaces(mesh->faces.size(), false);
+            for (int c = 1; c < vol_container.size(); c++)
+            {
+                for (int i = 0; i < vol_container[c].size(); i++)
+                    delfaces[vol_container[c][i]] = true;
+            }
+            trimesh::remove_faces(mesh, delfaces);
+            trimesh::remove_unused_vertices(mesh);
+        }
+        else if (parameter.filter_shell)
+        {
+            std::vector<bool> delfaces(mesh->faces.size(), false);
+            for (int c = 0; c < vol_container.size(); c++)
+            {
+                float v = topomesh::getMeshVolume(mesh, vol_container[c]);
+                if(v<=parameter.filter_tiny_shell)
+                    for (int i = 0; i < vol_container[c].size(); i++)
+                        delfaces[vol_container[c][i]] = true;
+            }
+            trimesh::remove_faces(mesh, delfaces);
+            trimesh::remove_unused_vertices(mesh);
+        }               
     }
 }

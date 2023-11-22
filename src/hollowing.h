@@ -75,6 +75,9 @@ namespace ovdbutil
         double voxel_size = 1.0;
 		
         int precision = NORMAL;
+        bool remain_main_shell = true;
+        bool filter_shell=false;
+        double filter_tiny_shell = 5.0;
 
 		INNER_FILL_CONFIG fill_config;
     };
@@ -109,8 +112,11 @@ namespace ovdbutil
     OVDBUTIL_API trimesh::TriMesh* hollowPrecisionMeshAndFill(trimesh::TriMesh* mesh,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
 
-    OVDBUTIL_API trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh,const std::vector<int>& selectfaces,
+    OVDBUTIL_API trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh,std::vector<int>& selectfaces,
         const HollowingParameter & = HollowingParameter(), ccglobal::Tracer* tracer = nullptr);
+
+    OVDBUTIL_API void FindShellVolume(trimesh::TriMesh* mesh,float volume, const HollowingParameter & = HollowingParameter());
+    OVDBUTIL_API bool CheckConnectChunk(trimesh::TriMesh* mesh, std::vector<std::vector<int>>& chunks,std::vector<int>& block);
 }
 
 #endif // OVDBUTIL_HOLLOWING_1650957593077_H

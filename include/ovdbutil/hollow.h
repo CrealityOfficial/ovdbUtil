@@ -24,7 +24,8 @@ namespace ovdbutil
         double thickness = 2.0;
         OutPrecesion precision = OutPrecesion::NORMAL;
 
-        bool remain_main_shell = false;
+        bool remain_main_shell = true;
+        bool filter_shell = false;
         double filter_tiny_shell = 5.0;  // mm3
         HollowStyle style = HollowStyle::hs_none;
         double fill_ratio = 0.2;
