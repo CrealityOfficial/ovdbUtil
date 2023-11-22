@@ -3,7 +3,7 @@
 #include "ovdbutil/interface.h"
 #include <vector>
 #include "trimesh2/TriMesh.h"
-#include "ovdbutil/hollowing.h"
+#include "hollowing.h"
 
 /*! \file subdivision.h
 	\brief A Documented file 细分头文件，单独为接口函数提供的文件头.
