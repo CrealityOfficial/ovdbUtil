@@ -3,7 +3,6 @@
 #include "ovdbutil/interface.h"
 #include <vector>
 #include "trimesh2/TriMesh.h"
-#include "hollowing.h"
 
 /*! \file subdivision.h
 	\brief A Documented file 细分头文件，单独为接口函数提供的文件头.
@@ -32,9 +31,6 @@ namespace ovdbutil
         double closing_distance = 0.0;
         double voxel_size_inout_range = 1.0;
         double voxel_size = 1.0;
-		
-		
-		INNER_FILL_CONFIG fill_config;
     };
 
 /**
