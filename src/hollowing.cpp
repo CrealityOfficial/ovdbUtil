@@ -1,4 +1,5 @@
-#include "ovdbutil/hollowing.h"
+#include "hollowing.h"
+#include "ovdbutil/hollow.h"
 
 #include "util/gridhelper.h"
 #include "util/tracer.h"
@@ -29,6 +30,17 @@
 
 namespace ovdbutil
 {
+    trimesh::TriMesh* hollowMesh(trimesh::TriMesh* mesh,
+        const HollowParameter& parameter, ccglobal::Tracer* tracer)
+    {
+        return nullptr;
+    }
+
+    trimesh::TriMesh* shellMesh(trimesh::TriMesh* mesh, const ShellParameter& parameter, ccglobal::Tracer* tracer)
+    {
+        return nullptr;
+    }
+
     openvdb::FloatGrid::Ptr redistance_grid(const openvdb::FloatGrid& grid, double iso, double er = 3.0, double ir = 3.0)
     {
         return openvdb::tools::levelSetRebuild(grid, float(iso), float(er), float(ir));
