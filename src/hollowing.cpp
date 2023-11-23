@@ -66,7 +66,6 @@ namespace ovdbutil
             break;
         }
         trimesh::TriMesh* hollowMesh = ovdbutil::hollowPrecisionMeshAndFill(mesh, param, tracer);
-        FindShellVolume(hollowMesh,param.filter_tiny_shell, param);       
         return hollowMesh;
     }
 
@@ -259,9 +258,7 @@ namespace ovdbutil
             newmesh, *transform, 3.0, 3.0f, voxel_size, 0xE);
         //typename openvdb::FloatGrid::Accessor accessor1 = gridptr1->getAccessor();
        
-
-        auto tmesh = grid_to_mesh(gridptr1, 0., 0., true);
-        tmesh->write("tmesh.ply");
+      
 
         std::cout << "back ground : " << gridptr1->background() << "\n";
         
@@ -327,7 +324,7 @@ namespace ovdbutil
         
         std::cout << " grid->voxelSize() : " << grid->voxelSize() << "\n";
         int dim = int(10.f + padding);
-        typename openvdb::FloatGrid::Accessor accessor = gridptr1->getAccessor();
+        typename openvdb::FloatGrid::Accessor accessor = grid->getAccessor();
         openvdb::Coord ijk;
         int& i = ijk[0], & j = ijk[1], & k = ijk[2];
         std::cout << "i : " << i << " j : " << j << " k : " << k << "\n";
@@ -363,16 +360,16 @@ namespace ovdbutil
                 }
             }
         }
-        openvdb::tools::signedFloodFill(gridptr1->tree());
-        ValueT backgound = gridptr1->background();
-        std::cout << "bbox : " << gridptr1->evalActiveVoxelBoundingBox() << "\n";
-        openvdb::Coord box1 = gridptr1->evalActiveVoxelBoundingBox().getStart();
-        openvdb::Coord box2 = gridptr1->evalActiveVoxelBoundingBox().getEnd();
+        openvdb::tools::signedFloodFill(grid->tree());
+        ValueT backgound = grid->background();
+        std::cout << "bbox : " << grid->evalActiveVoxelBoundingBox() << "\n";
+        openvdb::Coord box1 = grid->evalActiveVoxelBoundingBox().getStart();
+        openvdb::Coord box2 = grid->evalActiveVoxelBoundingBox().getEnd();
       
         std::vector<std::pair<int, int>> bone;
         openvdb::Coord topc;
         int& x = topc[0], & y = topc[1], & z = topc[2];
-        z = (int)box2.z() -3;
+        z = (int)box2.z() -2;
         //-----y----------
         for (x = box1.x(); x <= box2.x(); ++x) {
             int yy = 0, n = 0;
@@ -563,58 +560,7 @@ namespace ovdbutil
         double iso_surface = 0.;
         double adaptivity = 0.;
         auto omesh = grid_to_mesh(grid, iso_surface, adaptivity, true);
-        omesh->write("omesh.ply");
-        std::vector<bool> delomesh(omesh->faces.size(), false);       
-        for (int fi = 0; fi < omesh->faces.size(); fi++)
-        {
-            bool f= false;
-            int pf = 0;
-            for (int vi = 0; vi < 3; vi++)
-            {
-                int v = omesh->faces[fi][vi];
-                if (std::fabs(omesh->vertices[v].z-z)<0.2f)
-                {
-                    pf++;
-                }
-            }
-            if (pf == 3)
-                f = true;
-            if (f)
-            {
-                delomesh[fi] = true;
-            }
-        }
-       
-        trimesh::remove_faces(omesh, delomesh);
-        trimesh::remove_unused_vertices(omesh);
-        omesh->need_adjacentfaces();
-        omesh->need_neighbors();
-        for (int vi = 0; vi < omesh->vertices.size(); vi++)
-        {
-            if (omesh->neighbors[vi].size() != omesh->adjacentfaces[vi].size())
-            {
-                omesh->vertices[vi].z = z;
-            }
-        }
-        topomesh::CMesh cmesh(omesh);
-        std::vector<int> edges;
-        std::vector<std::vector<int>> sequentials;
-        cmesh.SelectIndividualEdges(edges);
-        cmesh.GetSequentialPoints(edges, sequentials);
-        trimesh::TriMesh* vmesh = new trimesh::TriMesh();     
-        for(int i=0;i<sequentials.size();i++)
-            for (int j = 0; j < sequentials[i].size(); j++)
-            {
-                int pro = (j - 1 + sequentials[i].size()) % sequentials[i].size();
-                int next =(j + 1 + sequentials[i].size()) % sequentials[i].size();
-                omesh->vertices[sequentials[i][j]].x = (omesh->vertices[sequentials[i][j]].x+ omesh->vertices[sequentials[i][pro]].x+ omesh->vertices[sequentials[i][next]].x)/3.f;
-                omesh->vertices[sequentials[i][j]].y = (omesh->vertices[sequentials[i][j]].y + omesh->vertices[sequentials[i][pro]].y + omesh->vertices[sequentials[i][next]].y) / 3.f;
-                vmesh->vertices.push_back(omesh->vertices[sequentials[i][j]]);
-            }
-        topomesh::JointBotMesh(mesh,omesh, selectfaces,0);
-        vmesh->write("vmesh.ply");        
-        omesh->write("omesh.ply");
-        mesh->write("aftermesh.ply");
+        omesh->write("omesh.ply");      
 
         //openvdb::FloatGrid::Ptr gridptr2 = mesh_to_grid(omesh, *transform, out_range, in_range, voxel_size, 0xE, tracer);
         //openvdb::tools::csgDifference(*gridptr1, *gridptr2);
@@ -929,6 +875,8 @@ namespace ovdbutil
         static const double MIN_OVERSAMPL = 3.;
         static const double MAX_OVERSAMPL = 8.;
         trimesh::TriMesh* returnmesh = hollowMesh(mesh, parameter, tracer);
+        FindShellVolume(returnmesh, parameter.filter_tiny_shell, parameter);
+
 
         trimesh::TriMesh* outMesh = new trimesh::TriMesh();
         std::vector<trimesh::TriMesh*> meshtotalV;
@@ -1039,7 +987,7 @@ namespace ovdbutil
         return hollowMesh;
     }
 
-    void FindShellVolume(trimesh::TriMesh* mesh, float volume, const HollowingParameter& parameter)
+    void FindShellVolume(trimesh::TriMesh* mesh, const HollowingParameter& parameter)
     {
         if (!mesh)
             return;
@@ -1089,6 +1037,8 @@ namespace ovdbutil
             if (fi == mesh->faces.size())
                 pass = false;
         }
+
+       
         if (parameter.remain_main_shell)
         {
             std::sort(vol_container.begin(), vol_container.end(), [&](std::vector<int>& a, std::vector<int>& b)->bool
