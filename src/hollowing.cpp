@@ -369,7 +369,7 @@ namespace ovdbutil
         std::vector<std::pair<int, int>> bone;
         openvdb::Coord topc;
         int& x = topc[0], & y = topc[1], & z = topc[2];
-        z = (int)box2.z() -2;
+        z = (int)box2.z() -1;
         //-----y----------
         for (x = box1.x(); x <= box2.x(); ++x) {
             int yy = 0, n = 0;
@@ -581,9 +581,10 @@ namespace ovdbutil
     trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh, std::vector<int>& selectfaces,
         const HollowingParameter& parameter, ccglobal::Tracer* tracer)
     {
-       /* std::vector<int> selectfacesc;
-        topomesh::findNeignborFacesOfSameAsNormal(mesh, 55011, 1.f, selectfacesc);
-        selectfaces.swap(selectfacesc);*/
+        /*std::vector<int> selectfacesc;
+        topomesh::findNeignborFacesOfSameAsNormal(mesh, 44619, 1.f, selectfacesc);
+        selectfaces.swap(selectfacesc);       
+        mesh->write("ori.ply");*/
 
         trimesh::point ave_normal(0,0,0);
         for (int fi : selectfaces)
@@ -621,8 +622,7 @@ namespace ovdbutil
         for (trimesh::point& p : mesh->vertices)        
             p =  mat*p;       
         mesh->clear_bbox();
-        mesh->need_bbox();
-        trimesh::vec3 trans = mesh->bbox.min;
+        mesh->need_bbox();       
         float min_z = mesh->bbox.min.z;
         for (trimesh::point& p : mesh->vertices)
             p.z = p.z - min_z;
@@ -682,7 +682,8 @@ namespace ovdbutil
 
         topomesh::JointBotMesh(mesh,returnmesh,selectfaces);
 
-        trimesh::trans(returnmesh, trans);
+        for (trimesh::point& p : returnmesh->vertices)
+            p.z += min_z;
         trimesh::apply_xform(returnmesh, trimesh::xform::rot_into(trimesh::vec3(0, 0, -1), ave_normal));
         //returnmesh->write("resultmesh.ply");
         return returnmesh;
@@ -875,7 +876,7 @@ namespace ovdbutil
         static const double MIN_OVERSAMPL = 3.;
         static const double MAX_OVERSAMPL = 8.;
         trimesh::TriMesh* returnmesh = hollowMesh(mesh, parameter, tracer);
-        FindShellVolume(returnmesh, parameter.filter_tiny_shell, parameter);
+        FindShellVolume(returnmesh, parameter);
 
 
         trimesh::TriMesh* outMesh = new trimesh::TriMesh();
