@@ -20,6 +20,8 @@
 #include <openvdb/math/Coord.h>
 #include <openvdb/tools/ValueTransformer.h>
 #include <openvdb/tools/MeshToVolume.h>
+#include <openvdb/tools/GridTransformer.h>
+
 #include <queue>
 
 
