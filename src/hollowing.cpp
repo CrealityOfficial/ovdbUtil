@@ -367,6 +367,7 @@ namespace ovdbutil
         openvdb::Coord box2 = grid->evalActiveVoxelBoundingBox().getEnd();
       
         std::vector<std::pair<int, int>> bone;
+       // std::unordered_map<bool,std::pair<int, int>> mark;
         openvdb::Coord topc;
         int& x = topc[0], & y = topc[1], & z = topc[2];
         z = (int)box2.z() -1;
@@ -382,7 +383,8 @@ namespace ovdbutil
                     if (accessor.getValue(next) == backgound)
                     {
                         int c = (int)(yy / n);
-                        bone.push_back(std::make_pair(x, c));
+                        bone.push_back(std::make_pair(x, c));  
+                        //mark.insert(true,std::make_pair(x,c));
                         yy = 0; n = 0;
                     }
                 }
@@ -436,8 +438,18 @@ namespace ovdbutil
         }
 
 
+       /* for (int dz = z - 1; dz >= box1.z(); dz--)
+        {
+            int distance = z - dz;
+            for (int v = 0; v < bone.size(); v++)
+            {
+                 
+            }
+        }*/
 
-        openvdb::Coord ijk1;
+
+
+        /*openvdb::Coord ijk1;
         int& i1 = ijk1[0], & j1 = ijk1[1], & k1 = ijk1[2];
         for (k1 = box2.z(); k1 >box2.z()-1; --k1) {
             
@@ -479,7 +491,7 @@ namespace ovdbutil
                 accessor.setValue(b,v);
                 accessor.setValue(c, backgound);               
             }
-        }
+        }*/
        
         
        /* for (openvdb::FloatGrid::ValueOnCIter iter = grid->cbeginValueOn(); iter; ++iter) {
@@ -623,10 +635,14 @@ namespace ovdbutil
             p =  mat*p;       
         mesh->clear_bbox();
         mesh->need_bbox();       
-        float min_z = mesh->bbox.min.z;
+        float min_z = mesh->vertices[mesh->faces[selectfaces[0]][0]].z;
         for (trimesh::point& p : mesh->vertices)
             p.z = p.z - min_z;
-
+        for (int fi : selectfaces)
+            for (int vi = 0; vi < 3; vi++)
+            {
+                mesh->vertices[mesh->faces[fi][vi]].z = 0.f;
+            }
         trimesh::TriMesh* returnmesh = hollowMesh(copymesh, parameter, tracer);
         std::vector<bool> delvertex(returnmesh->vertices.size(),false);
         for (trimesh::point& p : returnmesh->vertices)
