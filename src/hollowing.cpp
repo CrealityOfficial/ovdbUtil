@@ -20,8 +20,6 @@
 #include <openvdb/math/Coord.h>
 #include <openvdb/tools/ValueTransformer.h>
 #include <openvdb/tools/MeshToVolume.h>
-#include <openvdb/tools/GridTransformer.h>
-#include <openvdb/tools/Composite.h>
 #include <queue>
 
 
@@ -1039,7 +1037,7 @@ namespace ovdbutil
         return hollowMesh;
     }
 
-    void FindShellVolume(trimesh::TriMesh* mesh, float volume, const HollowParameter& parameter)
+    void FindShellVolume(trimesh::TriMesh* mesh, float volume, const HollowingParameter& parameter)
     {
         if (!mesh)
             return;
