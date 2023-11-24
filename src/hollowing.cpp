@@ -1120,6 +1120,7 @@ namespace ovdbutil
             for (int c = 0; c < vol_container.size(); c++)
             {
                 float v = topomesh::getMeshVolume(mesh, vol_container[c]);
+                v = std::abs(v);
                 if(v<=parameter.filter_tiny_shell)
                     for (int i = 0; i < vol_container[c].size(); i++)
                         delfaces[vol_container[c][i]] = true;
