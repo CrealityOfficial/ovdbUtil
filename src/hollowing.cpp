@@ -367,7 +367,11 @@ namespace ovdbutil
         openvdb::Coord box2 = grid->evalActiveVoxelBoundingBox().getEnd();
       
         std::vector<std::pair<int, int>> bone;
-       // std::unordered_map<bool,std::pair<int, int>> mark;
+        int dis_x = box2.x() - box1.x()+1;
+        int dis_y = box2.y() - box1.y()+1;
+        int offset_x = std::abs(box1.x());
+        int offset_y = std::abs(box1.y());
+        std::vector<std::vector<bool>> mapp(dis_x,std::vector<bool>(dis_y,false));
         openvdb::Coord topc;
         int& x = topc[0], & y = topc[1], & z = topc[2];
         z = (int)box2.z() -1;
@@ -384,7 +388,7 @@ namespace ovdbutil
                     {
                         int c = (int)(yy / n);
                         bone.push_back(std::make_pair(x, c));  
-                        //mark.insert(true,std::make_pair(x,c));
+                        mapp[x+offset_x][c+offset_y] = true;
                         yy = 0; n = 0;
                     }
                 }
@@ -404,6 +408,7 @@ namespace ovdbutil
                     {
                         int c = (int)(xx / n);
                         bone.push_back(std::make_pair(c, y));
+                        mapp[c+offset_x][y+offset_y] = true;
                         xx = 0; n = 0;
                     }
                 }
@@ -417,7 +422,7 @@ namespace ovdbutil
         std::cout << "\n";
         for (int ii = box1.y(); ii <= box2.y(); ii++)
         {
-            for (int jj = box1.x(); jj < box2.x(); jj++)
+            for (int jj = box1.x(); jj <= box2.x(); jj++)
             {
                 bool prift = false;
                 for (int v = 0; v < bone.size(); v++)
@@ -436,16 +441,48 @@ namespace ovdbutil
             }
             std::cout << "\n";
         }
+        std::cout << "\n";
+        std::cout << "\n";
 
-
-       /* for (int dz = z - 1; dz >= box1.z(); dz--)
+        //for (int dz = z - 1; dz >= box1.z(); dz--)
+        //{          
+        for (int dx = box1.x(); dx <= box2.x(); dx++)
         {
-            int distance = z - dz;
-            for (int v = 0; v < bone.size(); v++)
+            for (int dy = box1.y(); dy <= box2.y(); dy++)
             {
-                 
+                if (!mapp[dx + offset_x][dy + offset_y])
+                {
+                    bool prift = false;
+                    for (int ii = dx - 1; ii <= dx + 1; ii++)
+                    {
+                        for (int jj = dy - 1; jj <= dy + 1; jj++)
+                        {
+                            if (ii < box1.x() || jj < box1.y() || ii>box2.x() || jj>box2.y()) continue;
+                            if (mapp[ii + offset_x][jj + offset_y])
+                            {
+                                //----isok------
+                                prift = true;                              
+                                break;
+                            }
+                        }
+                        if (prift)
+                            break;
+                    }
+                    if(prift)
+                        std::cout << "* ";
+                    else
+                    {
+                        std::cout << "0 ";
+                    }
+                }
+                else
+                {
+                    std::cout << "0 ";
+                }
             }
-        }*/
+            std::cout << "\n";
+        }
+       // }
 
 
 
@@ -779,6 +816,10 @@ namespace ovdbutil
             }
         }
 
+
+
+
+
         static const double MIN_OVERSAMPL = 3.;
         static const double MAX_OVERSAMPL = 8.;
         double voxel_scale = parameter.voxel_size_inout_range;
@@ -822,7 +863,7 @@ namespace ovdbutil
         }
        
         mmesh::mergeTriMesh(outMesh, meshtotalV);
-        outMesh->write("outmesh.ply");
+       // outMesh->write("outmesh.ply");
         /*trimesh::TriMesh* newmesh = _generate_interior(outMesh, parameter.min_thickness, voxel_scale,
             parameter.closing_distance, tracer, parameter.voxel_size);
         newmesh->write("newmesh.ply");*/
@@ -1062,7 +1103,7 @@ namespace ovdbutil
                 {
                     float va = topomesh::getMeshVolume(mesh, a);
                     float vb = topomesh::getMeshVolume(mesh, b);
-                    return va > vb;
+                    return std::abs(va) > std::abs(vb);
                 });
             std::vector<bool> delfaces(mesh->faces.size(), false);
             for (int c = 1; c < vol_container.size(); c++)
