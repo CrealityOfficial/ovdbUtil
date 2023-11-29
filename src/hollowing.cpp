@@ -24,7 +24,7 @@
 
 #include <queue>
 
-
+#include <iomanip>
 
 namespace ovdbutil
 {
@@ -257,7 +257,7 @@ namespace ovdbutil
         openvdb::FloatGrid::Ptr gridptr1 = mesh_to_grid(interrupter, 
             newmesh, *transform, 3.0, 3.0f, voxel_size, 0xE);
         //typename openvdb::FloatGrid::Accessor accessor1 = gridptr1->getAccessor();
-       
+        typename openvdb::FloatGrid::Accessor accessor1 = gridptr1->getAccessor();
       
 
         std::cout << "back ground : " << gridptr1->background() << "\n";
@@ -360,7 +360,13 @@ namespace ovdbutil
                 }
             }
         }
+
         openvdb::tools::signedFloodFill(grid->tree());
+       /* for (openvdb::FloatGrid::ValueOnIter iter = grid->beginValueOn(); iter; ++iter) {
+
+            openvdb::Coord coord = iter.getCoord();
+            std::cout << "Grid " << coord << " value : " << iter.getValue() << std::endl;
+        }*/
         ValueT backgound = grid->background();
         std::cout << "bbox : " << grid->evalActiveVoxelBoundingBox() << "\n";
         openvdb::Coord box1 = grid->evalActiveVoxelBoundingBox().getStart();
@@ -374,17 +380,19 @@ namespace ovdbutil
         std::vector<std::vector<bool>> mapp(dis_x,std::vector<bool>(dis_y,false));
         openvdb::Coord topc;
         int& x = topc[0], & y = topc[1], & z = topc[2];
-        z = (int)box2.z() -1;
+        z = (int)box2.z()-2;    
+        //z = 0;
         //-----y----------
         for (x = box1.x(); x <= box2.x(); ++x) {
             int yy = 0, n = 0;
             for (y = box1.y(); y <= box2.y(); ++y) {
-                if (accessor.getValue(topc) != backgound)
+               // if (accessor.getValue(topc) != backgound)
+                if (accessor.getValue(topc) <=0.f)
                 {
                     yy += y;
                     n++;
                     openvdb::Coord next(x, y + 1, z);
-                    if (accessor.getValue(next) == backgound)
+                    if (accessor.getValue(next) >0.f)
                     {
                         int c = (int)(yy / n);
                         bone.push_back(std::make_pair(x, c));  
@@ -398,13 +406,15 @@ namespace ovdbutil
         for (y = box1.y(); y <= box2.y(); ++y) {
             int xx = 0, n = 0;
             for (x = box1.x(); x <= box2.y(); ++x) {
-                if (accessor.getValue(topc) != backgound)
+               // if (std::abs(accessor.getValue(topc)) != backgound)
+                if (accessor.getValue(topc) <= 0.f)
                 {
                     std::cout << "* ";
+                    //std::cout<<std::setprecision(3) << accessor.getValue(topc) << " ";
                     xx += x;
                     n++;
                     openvdb::Coord next(x + 1, y, z);
-                    if (accessor.getValue(next) == backgound)
+                    if (accessor.getValue(next) >0.f)
                     {
                         int c = (int)(xx / n);
                         bone.push_back(std::make_pair(c, y));
@@ -414,6 +424,7 @@ namespace ovdbutil
                 }
                 else {
                     std::cout << "0 ";
+                    //std::cout << accessor.getValue(topc) << "    ";
                 }
             }
             std::cout << "\n";
@@ -444,45 +455,95 @@ namespace ovdbutil
         std::cout << "\n";
         std::cout << "\n";
 
-        //for (int dz = z - 1; dz >= box1.z(); dz--)
-        //{          
-        for (int dx = box1.x(); dx <= box2.x(); dx++)
-        {
-            for (int dy = box1.y(); dy <= box2.y(); dy++)
+        //-----use mark[][] save levelset 
+        int dz = z - 1;
+       /* for (int dz = z - 1; dz >= box1.z(); dz--)
+        {*/     
+            std::vector<std::pair<int, int>> mark;
+            for (int dx = box1.x(); dx <= box2.x(); dx++)
             {
-                if (!mapp[dx + offset_x][dy + offset_y])
+                for (int dy = box1.y(); dy <= box2.y(); dy++)
                 {
-                    bool prift = false;
-                    for (int ii = dx - 1; ii <= dx + 1; ii++)
+                    openvdb::Coord coord(dx, dy, dz);
+                    if (accessor.getValue(coord) < 0.f)//find zero
                     {
-                        for (int jj = dy - 1; jj <= dy + 1; jj++)
+                        // down step number
+                        int step = 1;
+                        bool is_break = false;
+                        while (1)
                         {
-                            if (ii < box1.x() || jj < box1.y() || ii>box2.x() || jj>box2.y()) continue;
-                            if (mapp[ii + offset_x][jj + offset_y])
+                            //回字 循环查找mark                         
+                            for(int ddx=dx-step;ddx<=dx+step;ddx++)
+                                for (int ddy = dy - step; ddy <= dy + step; ddy++)
+                                {
+                                    if (std::sqrt(std::pow((std::abs(ddx-dx)),2)+std::pow((std::abs(ddy-dy)),2))<step
+                                        ||ddx<box1.x()||ddx>box2.x()||ddy<box1.y()||ddy>box2.y()) continue;
+                                    if (mapp[ddx + offset_x][ddy + offset_y])
+                                    {
+                                        is_break = true;
+                                        goto label;
+                                    }
+                                }
+                            label:
+                            if (is_break)
+                                break;
+                            else
                             {
-                                //----isok------
-                                prift = true;                              
+                                step++;
+                            }
+                            if (step >= dis_x / 2)
+                            {
+                                //find empty
                                 break;
                             }
                         }
-                        if (prift)
-                            break;
+                        //---find z block  and  down
+                      
+
+
                     }
-                    if(prift)
-                        std::cout << "* ";
-                    else
-                    {
-                        std::cout << "0 ";
-                    }
+                    //if (!mapp[dx + offset_x][dy + offset_y]&& accessor.getValue(coord)!=backgound)
+                    //{
+                    //    bool prift = false;
+                    //    for (int ii = dx - 1; ii <= dx + 1; ii++)
+                    //    {
+                    //        for (int jj = dy - 1; jj <= dy + 1; jj++)
+                    //        {
+                    //            if (ii < box1.x() || jj < box1.y() || ii>box2.x() || jj>box2.y()) continue;
+                    //            if (mapp[ii + offset_x][jj + offset_y])
+                    //            {
+                    //                //----isok------
+                    //                prift = true;                              
+                    //                break;
+                    //            }
+                    //        }
+                    //        if (prift)
+                    //            break;
+                    //    }
+                    //    if (prift)
+                    //    {
+                    //        std::cout << "* ";
+                    //        mark.push_back(std::make_pair(dx,dy));
+                    //    }
+                    //    else
+                    //    {
+                    //        std::cout << "0 ";
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    std::cout << "0 ";
+                    //}
                 }
-                else
-                {
-                    std::cout << "0 ";
-                }
+                std::cout << "\n";
+            }
+            for (int ii = 0; ii < mark.size(); ii++)
+            {
+                mapp[mark[ii].first + offset_x][mark[ii].second + offset_y] = true;
             }
             std::cout << "\n";
-        }
-       // }
+            std::cout << "\n";
+      //  }
 
 
 
@@ -625,6 +686,12 @@ namespace ovdbutil
             tracer->progress(0.95f);
         
         return omesh;
+    }
+
+
+    void FindTopZeroLevelSetAndGetBone(openvdb::FloatGrid::Ptr grid, std::vector < std::pair<int,int> >& bone )
+    {
+
     }
 
     trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh, std::vector<int>& selectfaces,
@@ -1049,6 +1116,7 @@ namespace ovdbutil
     {
         if (!mesh)
             return;
+
         mesh->clear_across_edge();
         mesh->need_across_edge();
         std::vector<bool> mark(mesh->faces.size(), false);

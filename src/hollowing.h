@@ -117,6 +117,7 @@ namespace ovdbutil
 
     OVDBUTIL_API void FindShellVolume(trimesh::TriMesh* mesh, const HollowingParameter & = HollowingParameter());
     OVDBUTIL_API bool CheckConnectChunk(trimesh::TriMesh* mesh, std::vector<std::vector<int>>& chunks,std::vector<int>& block);
+
 }
 
 #endif // OVDBUTIL_HOLLOWING_1650957593077_H
