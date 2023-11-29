@@ -1116,7 +1116,6 @@ namespace ovdbutil
     {
         if (!mesh)
             return;
-
         mesh->clear_across_edge();
         mesh->need_across_edge();
         std::vector<bool> mark(mesh->faces.size(), false);
