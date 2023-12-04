@@ -380,8 +380,8 @@ namespace ovdbutil
         std::vector<std::vector<bool>> mapp(dis_x,std::vector<bool>(dis_y,false));
         openvdb::Coord topc;
         int& x = topc[0], & y = topc[1], & z = topc[2];
-        z = (int)box2.z()-2;    
-        //z = 0;
+        //z = (int)box2.z()-2;    
+        z = 0;
         //-----y----------
         for (x = box1.x(); x <= box2.x(); ++x) {
             int yy = 0, n = 0;
@@ -409,8 +409,8 @@ namespace ovdbutil
                // if (std::abs(accessor.getValue(topc)) != backgound)
                 if (accessor.getValue(topc) <= 0.f)
                 {
-                    std::cout << "* ";
-                    //std::cout<<std::setprecision(3) << accessor.getValue(topc) << " ";
+                    //std::cout << "* ";
+                    std::cout<<std::setprecision(3) << accessor.getValue(topc) << " ";
                     xx += x;
                     n++;
                     openvdb::Coord next(x + 1, y, z);
@@ -423,8 +423,8 @@ namespace ovdbutil
                     }
                 }
                 else {
-                    std::cout << "0 ";
-                    //std::cout << accessor.getValue(topc) << "    ";
+                    //std::cout << "0 ";
+                    std::cout << accessor.getValue(topc) << "    ";
                 }
             }
             std::cout << "\n";
@@ -812,37 +812,40 @@ namespace ovdbutil
     bool CheckConnectChunk(trimesh::TriMesh* mesh, std::vector<std::vector<int>>& chunks, std::vector<int>& block)
     {
         mesh->need_across_edge();
-        bool result=true;
         std::vector<int> container;
-        int size = 0;
+        std::vector<bool> marked(mesh->faces.size(), false);
         for (int i = 0; i < chunks.size(); i++)
         {
-            size += chunks[i].size();
-            std::vector<int> temp(container);
-            container.insert(container.end(), chunks[i].begin(),chunks[i].end());
-            std::set<int> filter(container.begin(),container.end());
+            container.insert(container.end(), chunks[i].begin(), chunks[i].end());
+            std::set<int> filter(container.begin(), container.end());
             container.assign(filter.begin(), filter.end());
-            if (size == container.size()&&i!=0)
-            {
-                std::vector<bool> mark(mesh->faces.size(), false);
-                for (int fi = 0; fi < chunks[i].size(); fi++)
-                    mark[chunks[i][fi]] = true;
-                for (int fi = 0; fi < temp.size(); fi++)
-                {
-                    if (mark[mesh->across_edge[temp[fi]][0]] || mark[mesh->across_edge[temp[fi]][1]] || mark[mesh->across_edge[temp[fi]][2]])
-                    {
-                        break;
-                    }
-                }
-                result = false;
-            }
-            else if (size < container.size())
-            {
-                size = container.size();
-            }
         }
+        for (int fi = 0; fi < container.size(); fi++)
+            marked[container[fi]] = true;
+
+        std::vector<int> temp;
+        std::queue<int> que;
+        que.push(container[0]);
+        temp.push_back(container[0]);
+        while (!que.empty())
+        {
+            marked[que.front()] = false;
+            for (int i = 0; i < mesh->across_edge[que.front()].size(); i++)
+            {
+                int face = mesh->across_edge[que.front()][i];
+                if (marked[face])
+                {
+                    que.push(face);
+                    marked[face] = false;
+                    temp.push_back(face);
+                }
+            }
+            que.pop();
+        }
+        if (temp.size() != container.size())
+            return false;
         block.swap(container);
-        return result;
+        return true;
     }
 
     trimesh::TriMesh* generateInterior(trimesh::TriMesh* mesh, 
@@ -1069,6 +1072,8 @@ namespace ovdbutil
         openvdb::math::Transform::Ptr transform = openvdb::math::Transform::createLinearTransform(1.0f / (parameter.precision * 1.0f));
         std::vector<openvdb::math::Vec3s> cube_points;
         std::vector<openvdb::math::Coord::Vec3I> cube_faces;
+        if (tracer)
+            tracer->progress(0.2f);
         for (int i = 0; i < mesh->vertices.size(); i++)
         {
             cube_points.push_back(openvdb::math::Vec3s(mesh->vertices.at(i).x * parameter.precision, mesh->vertices.at(i).y * parameter.precision,
@@ -1079,6 +1084,8 @@ namespace ovdbutil
             cube_faces.push_back(openvdb::math::Coord::Vec3I(mesh->faces.at(i).x, mesh->faces.at(i).y, mesh->faces.at(i).z));
         }
         openvdb::tools::QuadAndTriangleDataAdapter<openvdb::math::Vec3s, openvdb::math::Coord::Vec3I> mesh_a(cube_points, cube_faces);
+        if (tracer)
+            tracer->progress(0.4f);
         openvdb::FloatGrid::Ptr gridptr = openvdb::tools::meshToVolume<openvdb::FloatGrid>(interrupter, 
             mesh_a, *transform, out_range, in_range, parameter.voxel_size, 0xE);
 
@@ -1101,13 +1108,15 @@ namespace ovdbutil
 
         double iso_surface = D;
         double adaptivity = 0.;
+        if (tracer)
+            tracer->progress(0.8f);
         trimesh::TriMesh* hollowMesh = grid_to_mesh(gridptr, iso_surface, adaptivity, false);       
 
         if (tracer && tracer->interrupt())
             return nullptr;
 
         if (tracer)
-            tracer->progress(0.95f);
+            tracer->progress(0.9f);
 
         return hollowMesh;
     }
