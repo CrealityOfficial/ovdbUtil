@@ -833,6 +833,7 @@ namespace ovdbutil
             for (int i = 0; i < mesh->across_edge[que.front()].size(); i++)
             {
                 int face = mesh->across_edge[que.front()][i];
+                if (face == -1) continue;
                 if (marked[face])
                 {
                     que.push(face);
