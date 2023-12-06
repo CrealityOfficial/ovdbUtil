@@ -847,7 +847,7 @@ namespace ovdbutil
         };
         int begin = selectvexter.size();
         std::unordered_map<trimesh::vec2, float, Hash_function, Equal_vec> refix;
-        for (int vi = begin; vi < newmesh->vertices.size(); vi++)
+        for (int vi = 0; vi < newmesh->vertices.size(); vi++)
         {
             trimesh::vec2 v = trimesh::vec2(newmesh->vertices[vi].x, newmesh->vertices[vi].y);
             refix.emplace(std::make_pair(v, newmesh->vertices[vi].z));
