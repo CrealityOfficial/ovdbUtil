@@ -52,7 +52,7 @@ namespace mmesh
 		trimesh::TriMesh* mesh = createSoupCylinder(count, _radius, _height);
 
 		const trimesh::vec3 cyOriginNormal(0.0f, 0.0f, 1.0f);
-		trimesh::quaternion q = trimesh::quaternion::rotationTo(normal, cyOriginNormal);
+		trimesh::quaternion q = trimesh::quaternion::rotationTo(cyOriginNormal, normal);
 		trimesh::fxform xf = trimesh::fxform::trans(centerPoint) * mmesh::fromQuaterian(q);
 		trimesh::apply_xform(mesh, trimesh::xform(xf));
 

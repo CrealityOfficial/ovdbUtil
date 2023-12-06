@@ -761,7 +761,7 @@ namespace ovdbutil
 
         trimesh::TriMesh* returnmesh = hollowMesh(copymesh, parameter, tracer);
         copymesh->clear();
-        if (!returnmesh)
+        if (!returnmesh||returnmesh->vertices.empty())
             return nullptr;
         std::vector<bool> delvertex(returnmesh->vertices.size(), false);
         for (trimesh::point& p : returnmesh->vertices)
