@@ -8,9 +8,11 @@
 #include "mesh/createcylinder.h"
 #include "mesh/ray.h"
 #include "mesh/adjacentoctree.h"
+#include "msbase/mesh/dumplicate.h"
 #include "msbase/mesh/get.h"
 #include "../topomesh/internal/alg/volumeMesh.h"
 #include "topomesh/interface/subdivision.h"
+#include "topomesh/interface/letter.h"
 #include "internal/alg/fillhoneycombs.h"
 #include "topomesh/interface/utils.h"
 #include "internal/data/mmesht.h"
@@ -696,13 +698,8 @@ namespace ovdbutil
 
     trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh, std::vector<int>& selectfaces,
         const HollowingParameter& parameter, ccglobal::Tracer* tracer)
-    {
-        /*std::vector<int> selectfacesc;
-        topomesh::findNeignborFacesOfSameAsNormal(mesh, 44619, 1.f, selectfacesc);
-        selectfaces.swap(selectfacesc);       
-        mesh->write("ori.ply");*/
-
-        trimesh::point ave_normal(0,0,0);
+    {       
+        trimesh::point ave_normal(0, 0, 0);
         for (int fi : selectfaces)
         {
             trimesh::point normal = msbase::getFaceNormal(mesh, fi);
@@ -714,8 +711,9 @@ namespace ovdbutil
 
         trimesh::TriMesh* copymesh = new trimesh::TriMesh();
         *copymesh = *mesh;
-        float extend = 2.*parameter.min_thickness;
+        float extend = 2. * parameter.min_thickness;
         std::vector<bool> markvexter(copymesh->vertices.size(), false);
+        std::vector<int> selectvexter;
         for (int fi : selectfaces)
         {
             for (int vi = 0; vi < 3; vi++)
@@ -724,31 +722,48 @@ namespace ovdbutil
                 if (!markvexter[v])
                 {
                     markvexter[v] = true;
-                    copymesh->vertices[v]= copymesh->vertices[v] + extend* ave_normal;
+                    copymesh->vertices[v] = copymesh->vertices[v] + extend * ave_normal;
+                    selectvexter.push_back(v);
                 }
             }
         }
-       /* std::vector<bool> delfaces(mesh->faces.size(),false);
-        for (int i : selectfaces)
-            delfaces[i] = true;
-        trimesh::remove_faces(mesh, delfaces);
-        trimesh::remove_unused_vertices(mesh);*/
 
-        trimesh::fxform&& mat = trimesh::fxform::rot_into(ave_normal, trimesh::vec3(0,0,-1));
-        for (trimesh::point& p : mesh->vertices)        
-            p =  mat*p;       
+
+        trimesh::fxform&& mat = trimesh::fxform::rot_into(ave_normal, trimesh::vec3(0, 0, -1));
+        for (trimesh::point& p : mesh->vertices)
+            p = mat * p;
         mesh->clear_bbox();
-        mesh->need_bbox();       
+        mesh->need_bbox();
         float min_z = mesh->vertices[mesh->faces[selectfaces[0]][0]].z;
+
+        mesh->need_neighbors();
+        for (int vi = 0; vi < selectvexter.size(); vi++)
+        {
+            int v = selectvexter[vi];
+            bool is_bound = false;
+            for (int vv = 0; vv < mesh->neighbors[v].size(); vv++)
+            {
+                if (markvexter[mesh->neighbors[v][vv]])
+                {
+                    is_bound = true; break;
+                }
+            }
+            if (is_bound)
+            {
+                if (mesh->vertices[v].z < min_z)
+                    min_z = mesh->vertices[v].z;
+            }
+        }
+
         for (trimesh::point& p : mesh->vertices)
             p.z = p.z - min_z;
-        for (int fi : selectfaces)
-            for (int vi = 0; vi < 3; vi++)
-            {
-                mesh->vertices[mesh->faces[fi][vi]].z = 0.f;
-            }
+
+
         trimesh::TriMesh* returnmesh = hollowMesh(copymesh, parameter, tracer);
-        std::vector<bool> delvertex(returnmesh->vertices.size(),false);
+        copymesh->clear();
+        if (!returnmesh)
+            return nullptr;
+        std::vector<bool> delvertex(returnmesh->vertices.size(), false);
         for (trimesh::point& p : returnmesh->vertices)
         {
             p = mat * p;
@@ -777,35 +792,104 @@ namespace ovdbutil
             }
         }
 
-        for (int vi=0;vi<returnmesh->vertices.size();vi++)
+        for (int vi = 0; vi < returnmesh->vertices.size(); vi++)
         {
             trimesh::point v = returnmesh->vertices[vi];
-            if (v.x<box.max.x && v.x>box.min.x && v.y<box.max.y && v.y>box.min.y && v.z > -1.2*extend && v.z < 0.5f)
+            if (v.x<box.max.x && v.x>box.min.x && v.y<box.max.y && v.y>box.min.y && v.z > -1.2 * extend && v.z < 0.5f)
             {
                 if (v.z < 0.f)
                     delvertex[vi] = true;
             }
         }
-
-        //std::vector<bool> del_faces(returnmesh->faces.size(), false);
-        trimesh::remove_vertices(returnmesh,delvertex);
+        trimesh::remove_vertices(returnmesh, delvertex);
         trimesh::remove_sliver_faces(returnmesh);
-        returnmesh->clear_adjacentfaces();
-        returnmesh->clear_neighbors();
+
+        std::vector<std::vector<trimesh::point>> sequentials = topomesh::GetOpenMeshBoundarys(returnmesh);
+        std::vector<std::vector<trimesh::vec2>> totalpoly;
+        for (int i = 0; i < sequentials.size(); i++)
+        {
+            totalpoly.push_back(std::vector<trimesh::vec2>());
+            for (int j = 0; j < sequentials[i].size(); j++)
+            {
+                totalpoly[i].push_back(trimesh::vec2(sequentials[i][j].x, sequentials[i][j].y));
+            }
+        }
+        trimesh::TriMesh* newmesh = new trimesh::TriMesh();
+        *newmesh = *mesh;
+
+        topomesh::embedingAndCutting(newmesh, totalpoly, selectfaces);
+        std::vector<std::vector<std::vector<trimesh::vec2>>>  Poly;
+        Poly.push_back(totalpoly);
+        std::vector<int> input;
+        for (int i = 0; i < newmesh->faces.size(); i++)
+            input.push_back(i);
+        std::vector<int> output;
+        topomesh::polygonInnerFaces(newmesh, Poly, input, output);
+        std::vector<bool> innerfaces(newmesh->faces.size(), false);
+        for (int i : output)
+        {
+            innerfaces[i] = true;
+        }
+        trimesh::remove_faces(newmesh, innerfaces);
+        trimesh::remove_unused_vertices(newmesh);
+
+        struct Equal_vec {
+            bool operator()(const trimesh::vec2& v1, const trimesh::vec2& v2) const
+            {
+                return trimesh::len(v1 - v2) <= 1e-4;
+            }
+        };
+        struct Hash_function {
+            size_t operator()(const trimesh::vec2& v)const
+            {
+                return (int(v.x * 1000) * 1000) + (int(v.y * 1000));
+            }
+        };
+        int begin = selectvexter.size();
+        std::unordered_map<trimesh::vec2, float, Hash_function, Equal_vec> refix;
+        for (int vi = begin; vi < newmesh->vertices.size(); vi++)
+        {
+            trimesh::vec2 v = trimesh::vec2(newmesh->vertices[vi].x, newmesh->vertices[vi].y);
+            refix.emplace(std::make_pair(v, newmesh->vertices[vi].z));
+        }
         returnmesh->need_adjacentfaces();
         returnmesh->need_neighbors();
+
         for (int vi = 0; vi < returnmesh->vertices.size(); vi++)
         {
-            if (returnmesh->adjacentfaces[vi].size() != returnmesh->neighbors[vi].size())
-                returnmesh->vertices[vi].z = 0.f;
+            if (returnmesh->neighbors[vi].size() != returnmesh->adjacentfaces[vi].size())
+            {
+                trimesh::vec2 v = trimesh::vec2(returnmesh->vertices[vi].x, returnmesh->vertices[vi].y);
+                auto it = refix.find(v);
+                if (it != refix.end())
+                    returnmesh->vertices[vi].z = it->second;
+            }
         }
 
-        topomesh::JointBotMesh(mesh,returnmesh,selectfaces);
+        std::vector<bool> delfaces(mesh->faces.size(), false);
+        for (int i : selectfaces)
+            delfaces[i] = true;
+        trimesh::remove_faces(mesh, delfaces);
+        trimesh::remove_unused_vertices(mesh);
+
+        int vertexsize = returnmesh->vertices.size();
+        for (int vi = 0; vi < mesh->vertices.size(); vi++)
+            returnmesh->vertices.push_back(mesh->vertices[vi]);
+        for (int fi = 0; fi < mesh->faces.size(); fi++)
+            returnmesh->faces.push_back(trimesh::TriMesh::Face(mesh->faces[fi][0] + vertexsize, mesh->faces[fi][1] + vertexsize, mesh->faces[fi][2] + vertexsize));
+
+        vertexsize = returnmesh->vertices.size();
+        for (int vi = 0; vi < newmesh->vertices.size(); vi++)
+            returnmesh->vertices.push_back(newmesh->vertices[vi]);
+        for (int fi = 0; fi < newmesh->faces.size(); fi++)
+            returnmesh->faces.push_back(trimesh::TriMesh::Face(newmesh->faces[fi][0] + vertexsize, newmesh->faces[fi][1] + vertexsize, newmesh->faces[fi][2] + vertexsize));
 
         for (trimesh::point& p : returnmesh->vertices)
             p.z += min_z;
         trimesh::apply_xform(returnmesh, trimesh::xform::rot_into(trimesh::vec3(0, 0, -1), ave_normal));
-        //returnmesh->write("resultmesh.ply");
+        msbase::dumplicateMesh(returnmesh);
+        msbase::mergeNearPoints(returnmesh, nullptr, 4e-3f);
+        // returnmesh->write("resultmesh.ply");
         return returnmesh;
     }
 
