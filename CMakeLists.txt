@@ -312,7 +312,7 @@ __add_real_target(openvdb lib SOURCE ${OVDB_SRCS}
 __files_group(${CMAKE_CURRENT_SOURCE_DIR}/include/ H1)
 __files_group(${CMAKE_CURRENT_SOURCE_DIR}/src/ S1)
 list(APPEND SRCS ${H1} ${S1})			
-		
+__cc_find(topomesh)		
 list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 list(APPEND LIBS openvdb topomesh)
 set(ILIBS trimesh2)
