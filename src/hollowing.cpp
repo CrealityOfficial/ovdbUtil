@@ -1088,6 +1088,8 @@ namespace ovdbutil
         static const double MIN_OVERSAMPL = 3.;
         static const double MAX_OVERSAMPL = 8.;
         trimesh::TriMesh* returnmesh = hollowMesh(mesh, parameter, tracer);
+        if (!returnmesh || returnmesh->vertices.empty())
+            return nullptr;
         FindShellVolume(returnmesh, parameter);
 
 
