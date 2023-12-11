@@ -60,7 +60,7 @@ namespace ovdbutil
             break;
         case HollowStyle::hs_infill_grid:
             param.fill_config.enable = true;
-            param.fill_config.fillratio = parameter.fill_ratio;
+            param.fill_config.fillratio = parameter.fill_ratio / 100.f;
             break;
             //-----empty----
         case HollowStyle::hs_self_support:
