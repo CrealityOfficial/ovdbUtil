@@ -30,6 +30,9 @@
 
 namespace ovdbutil
 {
+
+    void FindTopZeroLevelSetAndGetBone(openvdb::FloatGrid::Ptr grid, std::vector<std::vector<bool>>& bone, int& c);
+
     trimesh::TriMesh* hollowMesh(trimesh::TriMesh* mesh,
         const HollowParameter& parameter, ccglobal::Tracer* tracer)
     {
@@ -65,6 +68,7 @@ namespace ovdbutil
             //-----empty----
         case HollowStyle::hs_self_support:
             param.fill_config.enable = false;
+            param.self_support = true;
             break;
         }
         trimesh::TriMesh* hollowMesh = ovdbutil::hollowPrecisionMeshAndFill(mesh, param, tracer);
@@ -691,9 +695,65 @@ namespace ovdbutil
     }
 
 
-    void FindTopZeroLevelSetAndGetBone(openvdb::FloatGrid::Ptr grid, std::vector < std::pair<int,int> >& bone )
+    void FindTopZeroLevelSetAndGetBone(openvdb::FloatGrid::Ptr grid, std::vector<std::vector<bool>>& bone, int& c)
     {
+        openvdb::Coord box_start = grid->evalActiveVoxelBoundingBox().getStart();
+        openvdb::Coord box_end = grid->evalActiveVoxelBoundingBox().getEnd();
 
+        typename openvdb::FloatGrid::Accessor accessor = grid->getAccessor();
+        int offset_x = -box_start.x();
+        int offset_y = -box_start.y();
+        int dis_x = box_end.x() - box_start.x() + 1;
+        int dis_y = box_end.y() - box_start.y() + 1;
+        std::vector<std::vector<bool>> mark_container(dis_x, std::vector<bool>(dis_y, false));
+        for (int z = box_end.z(); z >= box_start.z(); z--) {
+            bool is_break = false;
+            for (int y = box_start.y(); y <= box_end.y(); ++y) {
+                for (int x = box_start.x(); x <= box_end.x(); ++x) {
+                    if (accessor.getValue(openvdb::Coord(x, y, z)) <= 0.f && accessor.getValue(openvdb::Coord(x, y, z + 1)) > 0.f)
+                    {
+                        is_break = true;
+                        c = z;
+                        mark_container[x + offset_x][y + offset_y] = true;
+                    }
+                }
+            }
+            if (is_break)
+                break;
+        }
+
+        //std::vector<std::vector<bool>> last_mark_container(dis_x, std::vector<bool>(dis_y, false));
+        for (int i = 0; i < dis_y; i++)
+        {
+            std::vector<int> x_container;
+            for (int j = 0; j < dis_x; j++)
+            {
+                if (mark_container[j][i])
+                    x_container.push_back(j);
+            }
+            if (x_container.empty()) continue;
+            int x_center = 0;
+            for (int xi = 0; xi < x_container.size(); xi++)
+                x_center += x_container[xi];
+            x_center /= x_container.size();
+            bone[x_center][i] = true;
+        }
+
+        for (int i = 0; i < dis_x; i++)
+        {
+            std::vector<int> y_container;
+            for (int j = 0; j < dis_y; j++)
+            {
+                if (mark_container[i][j])
+                    y_container.push_back(j);
+            }
+            if (y_container.empty()) continue;
+            int y_center = 0;
+            for (int yi = 0; yi < y_container.size(); yi++)
+                y_center += y_container[yi];
+            y_center /= y_container.size();
+            bone[i][y_center] = true;
+        }
     }
 
     trimesh::TriMesh* SelectFacesHollow(trimesh::TriMesh* mesh, std::vector<int>& selectfaces,
@@ -1176,6 +1236,108 @@ namespace ovdbutil
         openvdb::FloatGrid::Ptr gridptr = openvdb::tools::meshToVolume<openvdb::FloatGrid>(interrupter, 
             mesh_a, *transform, out_range, in_range, parameter.voxel_size, 0xE);
 
+        if (parameter.self_support)
+        {
+            using ValueT = typename openvdb::FloatGrid::ValueType;
+            typename openvdb::FloatGrid::Accessor accessor = gridptr->getAccessor();
+            ValueT backgound = gridptr->background();
+            openvdb::Coord box1 = gridptr->evalActiveVoxelBoundingBox().getStart();
+            openvdb::Coord box2 = gridptr->evalActiveVoxelBoundingBox().getEnd();          
+            int dis_x = box2.x() - box1.x() + 1;
+            int dis_y = box2.y() - box1.y() + 1;
+            int offset_x = -box1.x();
+            int offset_y = -box1.y();
+            std::vector<std::vector<bool>> mapp(dis_x, std::vector<bool>(dis_y, false));
+
+            int top_c = 0;
+            FindTopZeroLevelSetAndGetBone(gridptr, mapp, top_c);
+            for (int zz = top_c; zz >= box1.z(); zz--)
+            {
+                std::vector<std::pair<int, int>> temp_location;
+                for (int y = box1.y(); y <= box2.y(); ++y) {                  
+                    for (int x = box1.x(); x <= box2.x(); ++x) {
+                        // if (std::abs(accessor.getValue(topc)) != backgound)
+                        openvdb::Coord loc(x, y, zz);
+                        //if(false)                   
+                        if (accessor.getValue(loc) <= 0.f)
+                        {
+                            // std::cout<<std::setprecision(3) << accessor.getValue(topc) << " ";
+                           
+                            openvdb::Coord up(x, y, zz + 1);
+                            if (accessor.getValue(up) > 0.f)
+                            {
+                                // std::cout << "* ";
+                                /* int c = (int)(xx / n);
+                                 bone.push_back(std::make_pair(c, y));
+                                 mapp[c + offset_x][y + offset_y] = true;
+                                 xx = 0; n = 0;*/
+                                if (!mapp[x + offset_x][y + offset_y])
+                                {
+                                    if (mapp[x + offset_x + 1][y + offset_y] || mapp[x + offset_x][y + offset_y + 1] ||
+                                        mapp[x + offset_x - 1][y + offset_y] || mapp[x + offset_x][y + offset_y - 1] ||
+                                        mapp[x + offset_x - 1][y + offset_y - 1] || mapp[x + offset_x - 1][y + offset_y + 1] ||
+                                        mapp[x + offset_x + 1][y + offset_y - 1] || mapp[x + offset_x + 1][y + offset_y + 1])
+                                    {
+                                        temp_location.push_back(std::make_pair(x + offset_x, y + offset_y));
+                                    }
+                                    else
+                                    {
+                                        int botm = zz;
+                                        for (; botm > box1.z(); botm--)
+                                        {
+                                            openvdb::Coord bit(x, y, botm - 1);
+                                            if (accessor.getValue(bit) == -backgound)
+                                                break;
+                                            if (accessor.getValue(bit) == backgound)
+                                            {
+                                                botm = zz + 1;
+                                                break;
+                                            }
+                                            if (accessor.getValue(bit) <= 0.f)
+                                                if (accessor.getValue(openvdb::Coord(x - 1, y, botm - 1)) > 0.f || accessor.getValue(openvdb::Coord(x + 1, y, botm - 1)) > 0.f ||
+                                                    accessor.getValue(openvdb::Coord(x, y - 1, botm - 1)) > 0.f || accessor.getValue(openvdb::Coord(x, y + 1, botm - 1)) > 0.f)
+                                                {
+                                                    botm++;
+                                                    break;
+                                                }
+                                        }
+                                        if (botm == box1.z())
+                                            botm = zz + 1;
+                                        for (; botm < box2.z(); botm++)
+                                        {
+                                            openvdb::Coord it(x, y, botm);
+                                            openvdb::Coord bit(x, y, botm - 1);
+                                            if (accessor.getValue(bit) == backgound && accessor.getValue(it) == backgound)
+                                                break;
+                                            ValueT val = accessor.getValue(it);
+                                            accessor.setValue(bit, val);
+                                            //accessor.setValue(it, backgound);
+                                        }
+                                        openvdb::Coord bit(x, y, botm - 1);
+                                        accessor.setValue(bit, backgound);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                //std::cout << "0 ";
+                            }
+                        }
+                        else {
+                            //std::cout << "0 ";
+                            //std::cout << accessor.getValue(topc) << "    ";
+                        }
+                    }
+                    //std::cout << "\n";
+                }
+                for (int ti = 0; ti < temp_location.size(); ti++)
+                {
+                    mapp[temp_location[ti].first][temp_location[ti].second] = true;
+                }
+                /* std::cout << "\n";
+                 std::cout << "\n";*/
+            }
+        }
 
         if (!gridptr) {
             if (tracer)

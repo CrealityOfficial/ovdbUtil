@@ -78,6 +78,7 @@ namespace ovdbutil
         bool remain_main_shell = true;
         bool filter_shell=false;
         double filter_tiny_shell = 5.0;
+        bool self_support = false;
 
 		INNER_FILL_CONFIG fill_config;
     };
@@ -117,7 +118,7 @@ namespace ovdbutil
 
     OVDBUTIL_API void FindShellVolume(trimesh::TriMesh* mesh, const HollowingParameter & = HollowingParameter());
     OVDBUTIL_API bool CheckConnectChunk(trimesh::TriMesh* mesh, std::vector<std::vector<int>>& chunks,std::vector<int>& block);
-
+   
 }
 
 #endif // OVDBUTIL_HOLLOWING_1650957593077_H
