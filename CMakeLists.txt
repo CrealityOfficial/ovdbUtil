@@ -37,10 +37,10 @@ set(OPENVDB_CORE_DEPENDENT_LIBS "")
 # always be pulled from there (we should always be using the version of TBB
 # shipped with Houdini).
 
-__cc_find(tbb)
-__assert_target(tbb)
+__cc_find(tbb_static)
+__assert_target(tbb_static)
 
-list(APPEND OPENVDB_CORE_DEPENDENT_LIBS tbb)
+list(APPEND OPENVDB_CORE_DEPENDENT_LIBS tbb_static)
 add_definitions(-DUSE_TBB_MODULE)
 
 __cc_find(boost_header)

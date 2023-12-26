@@ -6,6 +6,6 @@ external_repository: https://github.com/CrealityOfficial/ovdbUtil
 description: ovdbUtil
 topics: ovdbUtil
 defs: "HAVE_OVDBUTIL_BOOLEAN"
-build_deps: trimesh2/0.0.3,tbb/0.0.2,boost_static/1.0.0,zlib_static/1.0.0
+build_deps: trimesh2/0.0.3,tbb_static/1.0.0,boost_static/1.0.0,zlib_static/1.0.0
 search_deps: trimesh2/0.0.3,tbb/0.0.2
 
