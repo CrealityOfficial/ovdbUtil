@@ -1247,96 +1247,476 @@ namespace ovdbutil
             int dis_y = box2.y() - box1.y() + 1;
             int offset_x = -box1.x();
             int offset_y = -box1.y();
-            std::vector<std::vector<bool>> mapp(dis_x, std::vector<bool>(dis_y, false));
+            int dis_z = box2.z() - box1.z() + 1;
+            int offset_z = -box1.z();
 
-            int top_c = 0;
-            FindTopZeroLevelSetAndGetBone(gridptr, mapp, top_c);
-            for (int zz = top_c; zz >= box1.z(); zz--)
+            std::vector<std::vector<std::vector<bool>>> pendingcollose(dis_x, std::vector<std::vector<bool>>(dis_y, std::vector<bool>(dis_z, false)));            
+            std::vector<std::vector<std::vector<bool>>> mark_voxel(dis_x, std::vector<std::vector<bool>>(dis_y, std::vector<bool>(dis_z, false)));
+            std::vector<std::vector<std::vector<bool>>> total_voxel(dis_x, std::vector<std::vector<bool>>(dis_y, std::vector<bool>(dis_z, false)));
+            for (int zz = box2.z(); zz >= box1.z(); zz--)
             {
-                std::vector<std::pair<int, int>> temp_location;
-                for (int y = box1.y(); y <= box2.y(); ++y) {                  
-                    for (int x = box1.x(); x <= box2.x(); ++x) {
-                        // if (std::abs(accessor.getValue(topc)) != backgound)
-                        openvdb::Coord loc(x, y, zz);
-                        //if(false)                   
+                for (int yy = box1.y(); yy <= box2.y(); ++yy) {
+                    for (int xx = box1.x(); xx <= box2.x(); ++xx) {
+                        openvdb::Coord loc(xx, yy, zz);                      
                         if (accessor.getValue(loc) <= 0.f)
+                        {                          
+                            pendingcollose[xx + offset_x][yy + offset_y][zz + offset_z] = true;
+                            total_voxel[xx + offset_x][yy + offset_y][zz + offset_z] = true;
+                        }                        
+                        if (accessor.getValue(loc) <= 0.f && (accessor.getValue(openvdb::Coord(xx, yy, zz + 1)) > 0.f))
                         {
-                            // std::cout<<std::setprecision(3) << accessor.getValue(topc) << " ";
-                           
-                            openvdb::Coord up(x, y, zz + 1);
-                            if (accessor.getValue(up) > 0.f)
-                            {
-                                // std::cout << "* ";
-                                /* int c = (int)(xx / n);
-                                 bone.push_back(std::make_pair(c, y));
-                                 mapp[c + offset_x][y + offset_y] = true;
-                                 xx = 0; n = 0;*/
-                                if (!mapp[x + offset_x][y + offset_y])
-                                {
-                                    if (mapp[x + offset_x + 1][y + offset_y] || mapp[x + offset_x][y + offset_y + 1] ||
-                                        mapp[x + offset_x - 1][y + offset_y] || mapp[x + offset_x][y + offset_y - 1] ||
-                                        mapp[x + offset_x - 1][y + offset_y - 1] || mapp[x + offset_x - 1][y + offset_y + 1] ||
-                                        mapp[x + offset_x + 1][y + offset_y - 1] || mapp[x + offset_x + 1][y + offset_y + 1])
-                                    {
-                                        temp_location.push_back(std::make_pair(x + offset_x, y + offset_y));
-                                    }
-                                    else
-                                    {
-                                        int botm = zz;
-                                        for (; botm > box1.z(); botm--)
-                                        {
-                                            openvdb::Coord bit(x, y, botm - 1);
-                                            if (accessor.getValue(bit) == -backgound)
-                                                break;
-                                            if (accessor.getValue(bit) == backgound)
-                                            {
-                                                botm = zz + 1;
-                                                break;
-                                            }
-                                            if (accessor.getValue(bit) <= 0.f)
-                                                if (accessor.getValue(openvdb::Coord(x - 1, y, botm - 1)) > 0.f || accessor.getValue(openvdb::Coord(x + 1, y, botm - 1)) > 0.f ||
-                                                    accessor.getValue(openvdb::Coord(x, y - 1, botm - 1)) > 0.f || accessor.getValue(openvdb::Coord(x, y + 1, botm - 1)) > 0.f)
-                                                {
-                                                    botm++;
-                                                    break;
-                                                }
-                                        }
-                                        if (botm == box1.z())
-                                            botm = zz + 1;
-                                        for (; botm < box2.z(); botm++)
-                                        {
-                                            openvdb::Coord it(x, y, botm);
-                                            openvdb::Coord bit(x, y, botm - 1);
-                                            if (accessor.getValue(bit) == backgound && accessor.getValue(it) == backgound)
-                                                break;
-                                            ValueT val = accessor.getValue(it);
-                                            accessor.setValue(bit, val);
-                                            //accessor.setValue(it, backgound);
-                                        }
-                                        openvdb::Coord bit(x, y, botm - 1);
-                                        accessor.setValue(bit, backgound);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                //std::cout << "0 ";
-                            }
+                            mark_voxel[xx + offset_x][yy + offset_y][zz + offset_z] = true;
+                        }                      
+                    }                  
+                }               
+            }
+
+            std::vector<std::vector<std::vector<int>>> center_voxel(dis_x, std::vector<std::vector<int>>(dis_y, std::vector<int>(dis_z, 0)));
+            for (int y = 0; y < pendingcollose[0].size(); y++)
+                for (int x = 0; x < pendingcollose.size(); x++)
+                {
+                    std::vector<std::vector<int>> mark_z;
+                    bool change = false;
+                    for (int z = 0; z < pendingcollose[0][0].size(); z++)
+                    {
+                        if (!pendingcollose[x][y][z])
+                        {
+                            change = false;
                         }
-                        else {
-                            //std::cout << "0 ";
-                            //std::cout << accessor.getValue(topc) << "    ";
+                        else if (pendingcollose[x][y][z])
+                        {
+                            if (!change) mark_z.push_back(std::vector<int>());
+                            change = true;
+                            mark_z.back().push_back(z);
                         }
                     }
-                    //std::cout << "\n";
+
+                    for (int mi = 0; mi < mark_z.size(); mi++)
+                    {
+                        int total_z = 0;
+                        for (int mii = 0; mii < mark_z[mi].size(); mii++)
+                            total_z += mark_z[mi][mii];
+                        total_z /= mark_z[mi].size();
+                        if (pendingcollose[x][y][total_z])
+                            center_voxel[x][y][total_z]++;
+                    }
                 }
-                for (int ti = 0; ti < temp_location.size(); ti++)
+
+            for (int z = 0; z < pendingcollose[0][0].size(); z++)
+                for (int y = 0; y < pendingcollose[0].size(); y++)
                 {
-                    mapp[temp_location[ti].first][temp_location[ti].second] = true;
+                    std::vector<std::vector<int>> mark_x;
+                    bool change = false;
+                    for (int x = 0; x < pendingcollose.size(); x++)
+                    {
+                        if (!pendingcollose[x][y][z])
+                            change = false;
+                        else if (pendingcollose[x][y][z])
+                        {
+                            if (!change) mark_x.push_back(std::vector<int>());
+                            change = true;
+                            mark_x.back().push_back(x);
+                        }
+                    }
+
+                    for (int mi = 0; mi < mark_x.size(); mi++)
+                    {
+                        int total_x = 0;
+                        for (int mii = 0; mii < mark_x[mi].size(); mii++)
+                            total_x += mark_x[mi][mii];
+                        total_x /= mark_x[mi].size();
+                        if (pendingcollose[total_x][y][z])
+                            center_voxel[total_x][y][z]++;
+                    }
                 }
-                /* std::cout << "\n";
-                 std::cout << "\n";*/
+
+            for (int z = 0; z < pendingcollose[0][0].size(); z++)
+                for (int x = 0; x < pendingcollose.size(); x++)
+                {
+                    std::vector<std::vector<int>> mark_y;
+                    bool change = false;
+                    for (int y = 0; y < pendingcollose[0].size(); y++)
+                    {
+                        if (!pendingcollose[x][y][z])
+                            change = false;
+                        else if (pendingcollose[x][y][z])
+                        {
+                            if (!change) mark_y.push_back(std::vector<int>());
+                            change = true;
+                            mark_y.back().push_back(y);
+                        }
+                    }
+
+                    for (int mi = 0; mi < mark_y.size(); mi++)
+                    {
+                        int total_y = 0;
+                        for (int mii = 0; mii < mark_y[mi].size(); mii++)
+                            total_y += mark_y[mi][mii];
+                        total_y /= mark_y[mi].size();
+                        if (pendingcollose[x][total_y][z])
+                            center_voxel[x][total_y][z]++;
+                    }
+                }
+
+            for (int z = 0; z < pendingcollose[0][0].size(); z++)
+                for (int y = 0; y < pendingcollose[0].size(); y++)
+                    for (int x = 0; x < pendingcollose.size(); x++)
+                        pendingcollose[x][y][z] = false;
+
+            for (int z = 0; z < center_voxel[0][0].size(); z++)
+                for (int y = 0; y < center_voxel[0].size(); y++)
+                    for (int x = 0; x < center_voxel.size(); x++)
+                    {
+                        if (center_voxel[x][y][z] >= 2)
+                        {
+                            int neighbor = 0;
+                            for (int i = -1; i <= 1; i++)
+                                for (int j = -1; j <= 1; j++)
+                                    for (int k = -1; k <= 1; k++)
+                                    {
+                                        if ((std::abs(i) + std::abs(j) + std::abs(k)) == 1)
+                                        {
+                                            if (x + i < 0 || y + j < 0 || z + k < 0) continue;
+                                            if (center_voxel[x + i][y + j][z + k] >= 2)
+                                                neighbor++;
+                                        }
+                                    }
+                            if (neighbor > 0)
+                            {
+                                pendingcollose[x][y][z] = true;                                
+                            }
+                        }
+                    }
+
+            std::vector<std::vector<std::vector<bool>>> top_mark(dis_x, std::vector<std::vector<bool>>(dis_y, std::vector<bool>(dis_z, false)));
+            for (int z = 0; z < pendingcollose[0][0].size(); z++)
+                for (int y = 0; y < pendingcollose[0].size(); y++)
+                    for (int x = 0; x < pendingcollose.size(); x++)
+                    {
+                        if (pendingcollose[x][y][z])
+                        {
+                            for (int zz = z; zz < pendingcollose[0][0].size(); zz++)
+                            {
+                                if (mark_voxel[x][y][zz] && !mark_voxel[x][y][zz - 1])
+                                {
+                                    top_mark[x][y][zz] = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+            for (int z = top_mark[0][0].size() - 1; z >= 0; z--)
+                for (int y = 0; y < top_mark[0].size(); y++)
+                    for (int x = 0; x < top_mark.size(); x++)
+                    {
+                        if (top_mark[x][y][z])
+                        {
+                            for (int i = -1; i <= 1; i++)
+                                for (int j = -1; j <= 1; j++)
+                                {
+                                    if (total_voxel[x + i][y + j][z - 1])
+                                        top_mark[x + i][y + j][z - 1] = true;
+                                }
+                        }
+                    }
+
+            std::vector<std::vector<std::vector<bool>>> no_support(dis_x, std::vector<std::vector<bool>>(dis_y, std::vector<bool>(dis_z, false)));
+            std::vector<std::vector<std::vector<bool>>> collose_shell(dis_x, std::vector<std::vector<bool>>(dis_y, std::vector<bool>(dis_z, false)));
+            for (int z = top_mark[0][0].size() - 1; z >= 0; z--)
+                for (int y = 0; y < top_mark[0].size(); y++)
+                    for (int x = 0; x < top_mark.size(); x++)
+                    {
+                        if (top_mark[x][y][z])
+                        {
+                            bool is_shell = false;
+                            for (int i = -1; i <= 1; i++)
+                                for (int j = -1; j <= 1; j++)
+                                    for (int k = -1; k <= 1; k++)
+                                        if ((std::abs(i) + std::abs(j) + std::abs(k)) == 1)
+                                            if (!top_mark[x + i][y + j][z + k])
+                                            {
+                                                is_shell = true;
+                                            }
+                            if (is_shell)
+                                collose_shell[x][y][z] = true;
+                        }
+                    }
+
+            for (int z = 0; z < collose_shell[0][0].size(); z++)
+                for (int y = 0; y < collose_shell[0].size(); y++)
+                    for (int x = 0; x < collose_shell.size(); x++)
+                    {
+                        if (collose_shell[x][y][z])
+                        {
+                            bool is_support = false;
+                            for (int i = -1; i <= 1; i++)
+                                for (int j = -1; j <= 1; j++)
+                                {
+                                    if (collose_shell[x + i][y + j][z - 1])
+                                        is_support = true;
+                                    else
+                                        if (!total_voxel[x + i][y + j][z - 1])
+                                            is_support = true;
+                                }
+                            if (!is_support)
+                                no_support[x][y][z] = true;
+                        }
+                    }
+
+            std::vector<std::vector<std::vector<bool>>> no_support_2 = no_support;
+            std::vector<std::vector<trimesh::ivec3>> line_support;
+            for (int z = 0; z < no_support[0][0].size(); z++)
+                for (int y = 0; y < no_support[0].size(); y++)
+                    for (int x = 0; x < no_support.size(); x++)
+                    {
+                        if (no_support[x][y][z])
+                        {
+                            line_support.push_back(std::vector<trimesh::ivec3>());
+                            line_support.back().push_back(trimesh::ivec3(x, y, z));
+                            no_support[x][y][z] = false;
+                            std::queue<trimesh::ivec3> que;
+                            que.push(trimesh::ivec3(x, y, z));
+                            while (!que.empty())
+                            {
+                                trimesh::ivec3 q = que.front();
+                                for (int i = -1; i <= 1; i++)
+                                    for (int j = -1; j <= 1; j++)
+                                    {
+                                        if (q.x + i < 0 || q.y + j < 0) continue;
+                                        if (i == 0 && j == 0) continue;
+                                        if ((std::abs(i) + std::abs(j)) == 1)
+                                            if (no_support[q.x + i][q.y + j][q.z])
+                                            {
+                                                no_support[q.x + i][q.y + j][q.z] = false;
+                                                que.push(trimesh::ivec3(q.x + i, q.y + j, q.z));
+                                                line_support.back().push_back(trimesh::ivec3(q.x + i, q.y + j, q.z));
+                                            }
+                                    }
+                                que.pop();
+                            }
+                        }
+                    }
+
+            std::vector<trimesh::ivec3> volex_support;
+            std::vector<std::vector<int>> lines_mark;
+            for (int li = 0; li < line_support.size(); li++)
+            {
+                bool is_intercross = false;
+                std::vector<int> line_mark;
+                for (int lii = 0; lii < line_support[li].size(); lii++)
+                {
+                    trimesh::ivec3 p = line_support[li][lii];
+                    int neighbor_mark = 0;
+                    for (int i = -1; i <= 1; i++)
+                        for (int j = -1; j <= 1; j++)
+                        {
+                            if (i == -1 && j == 0)
+                            {
+                                if (no_support_2[p.x + i][p.y + j][p.z])
+                                    neighbor_mark += 1;
+                            }
+                            else if (i == 0 && j == 1)
+                            {
+                                if (no_support_2[p.x + i][p.y + j][p.z])
+                                    neighbor_mark += 2;
+                            }
+                            else if (i == 1 && j == 0)
+                            {
+                                if (no_support_2[p.x + i][p.y + j][p.z])
+                                    neighbor_mark += 4;
+                            }
+                            else if (i == 0 && j == -1)
+                            {
+                                if (no_support_2[p.x + i][p.y + j][p.z])
+                                    neighbor_mark += 8;
+                            }
+                        }
+
+                    if (neighbor_mark == 15)
+                    {
+                        is_intercross = true;
+                        line_mark.push_back(2);
+
+                        continue;
+                    }
+                    else if (neighbor_mark == 0)
+                    {
+                        line_mark.push_back(3);
+
+                        continue;
+                    }
+
+                    int mf = neighbor_mark & 1;
+                    int change_num = 0;
+                    int mark_num = 0;
+                    if (mf)
+                    {
+                        neighbor_mark += 16;
+                    }
+                    neighbor_mark >>= 1;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        int mk = neighbor_mark & 1;
+                        if (mk)
+                            mark_num++;
+                        if (mk != mf)
+                        {
+                            mf = mk;
+                            change_num++;
+                        }
+                        neighbor_mark >>= 1;
+                    }
+
+
+                    if (change_num == 2)
+                    {
+                        if (mark_num == 3)
+                            line_mark.push_back(0);
+                        else if (mark_num == 1 || mark_num == 2)
+                            line_mark.push_back(1);
+                        else
+                            int aaa = 1;
+                    }
+                    else if (change_num == 4)
+                        line_mark.push_back(0);
+
+                }
+                lines_mark.push_back(line_mark);
+                if (line_mark.size() == 1)
+                {
+                    //volex_support.push_back(trimesh::ivec3(line_support[li][0].x, line_support[li][0].y, line_support[li][0].z));
+                    continue;
+                }
+
+                if (!is_intercross)
+                {
+                    int cx = 0, cy = 0, dn = 0;
+                    for (int ii = 0; ii < line_mark.size(); ii++)
+                    {
+                        if (line_mark[ii] == 1)
+                        {
+                            dn++;
+                            cx += line_support[li][ii].x;
+                            cy += line_support[li][ii].y;
+                        }
+                    }
+                    cx /= dn;
+                    cy /= dn;
+                    volex_support.push_back(trimesh::ivec3(cx, cy, line_support[li][0].z));
+                    //volex_support[cx][cy][line_support[li][0].z] = true;
+                }
+                else {
+                    int cx = 0, cy = 0, dn = 0;
+                    for (int ii = 0; ii < line_mark.size(); ii++)
+                    {
+                        if (line_mark[ii] == 2)
+                        {
+                            dn++;
+                            cx += line_support[li][ii].x;
+                            cy += line_support[li][ii].y;
+                        }
+                    }
+                    cx /= dn;
+                    cy /= dn;
+                    volex_support.push_back(trimesh::ivec3(cx, cy, line_support[li][0].z));
+                }
+
             }
+
+            for (int li = 0; li < line_support.size(); li++)
+            {
+                for (int lii = 0; lii < line_support[li].size(); lii++)
+                {
+                    if (lines_mark[li][lii] != 3)
+                    {
+                        int dx = std::abs(line_support[li][lii].x - volex_support[li].x);
+                        int dy = std::abs(line_support[li][lii].y - volex_support[li].y);
+                        int dz = line_support[li][lii].z - dx - dy;
+                        int tz = line_support[li][lii].z;
+                        int zi = tz;
+                        for (; zi >= dz; zi--)
+                        {
+                            if (!top_mark[line_support[li][lii].x][line_support[li][lii].y][zi])
+                                break;
+                            top_mark[line_support[li][lii].x][line_support[li][lii].y][zi] = false;
+                        }
+                        if (zi == 0) continue;
+                        if (lines_mark[li][lii] == 1 && top_mark[line_support[li][lii].x][line_support[li][lii].y][zi])
+                        {
+                            for (int zii = zi; zii >= 0; zii--)
+                            {
+                                if (!top_mark[line_support[li][lii].x][line_support[li][lii].y][zii])
+                                    break;
+                                top_mark[line_support[li][lii].x][line_support[li][lii].y][zii] = false;
+                            }
+                        }
+                        if (lines_mark[li][lii] == 1)
+                        {
+                            std::vector<trimesh::ivec3> volex_neighbor;
+                            volex_neighbor.push_back(trimesh::ivec3(line_support[li][lii].x - 1, line_support[li][lii].y, line_support[li][lii].z));
+                            volex_neighbor.push_back(trimesh::ivec3(line_support[li][lii].x + 1, line_support[li][lii].y, line_support[li][lii].z));
+                            volex_neighbor.push_back(trimesh::ivec3(line_support[li][lii].x, line_support[li][lii].y - 1, line_support[li][lii].z));
+                            volex_neighbor.push_back(trimesh::ivec3(line_support[li][lii].x, line_support[li][lii].y + 1, line_support[li][lii].z));
+                            for (int neighbor_i = 0; neighbor_i < 4; neighbor_i++)
+                            {
+                                const trimesh::ivec3& p = volex_neighbor[neighbor_i];
+                                if (p.x < 0 || p.x >= top_mark.size() || p.y < 0 || p.y >= top_mark[0].size()) continue;
+                                int zu = p.z + 1;
+                                int zd = p.z - 1;
+                                top_mark[p.x][p.y][p.z] = false;
+                                while (1)
+                                {
+                                    if (!top_mark[p.x][p.y][zu])
+                                        break;
+                                    top_mark[p.x][p.y][zu] = false;
+                                    zu++;
+                                }
+                                while (1)
+                                {
+                                    if (!top_mark[p.x][p.y][zd])
+                                        break;
+                                    top_mark[p.x][p.y][zd] = false;
+                                    zd--;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (int z = box2.z(); z >= box1.z(); z--)
+                for (int y = box1.y(); y <= box2.y(); ++y) {
+                    for (int x = box1.x(); x <= box2.x(); ++x) {
+                        openvdb::Coord loc(x, y, z);
+                        openvdb::Coord up(x, y, z + 1);
+                        //openvdb::Coord down(x, y, z - 1);
+                        ValueT val_loc = accessor.getValue(loc);
+                        ValueT val_up = accessor.getValue(up);
+                        // ValueT val_down = accessor.getValue(down);
+                        if (accessor.getValue(loc) <= 0.f && accessor.getValue(up) > 0.f) {
+                            if (!top_mark[x + offset_x][y + offset_y][z + offset_z])
+                            {
+                                int zi = z + offset_z;
+                                for (; zi >= 0; zi--)
+                                {
+                                    if (accessor.getValue(openvdb::Coord(x, y, zi - offset_z)) > 0.f)
+                                        break;
+                                    if (top_mark[x + offset_x][y + offset_y][zi])
+                                    {
+                                        accessor.setValue(openvdb::Coord(x, y, zi - offset_z + 1), val_up);
+                                        accessor.setValue(openvdb::Coord(x, y, zi - offset_z), val_loc);
+                                        //accessor.setValue(openvdb::Coord(x, y, zi - offset_z-1), val_down);
+                                        break;
+                                    }
+                                    else
+                                        accessor.setValue(openvdb::Coord(x, y, zi - offset_z), backgound);
+                                }
+                            }
+                        }
+                    }
+                }
+
         }
 
         if (!gridptr) {
