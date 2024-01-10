@@ -1238,6 +1238,7 @@ namespace ovdbutil
 
         if (parameter.self_support)
         {
+            double inside_offset = -offset;
             using ValueT = typename openvdb::FloatGrid::ValueType;
             typename openvdb::FloatGrid::Accessor accessor = gridptr->getAccessor();
             ValueT backgound = gridptr->background();
@@ -1258,12 +1259,12 @@ namespace ovdbutil
                 for (int yy = box1.y(); yy <= box2.y(); ++yy) {
                     for (int xx = box1.x(); xx <= box2.x(); ++xx) {
                         openvdb::Coord loc(xx, yy, zz);                      
-                        if (accessor.getValue(loc) <= 0.f)
+                        if (accessor.getValue(loc) <= inside_offset)
                         {                          
                             pendingcollose[xx + offset_x][yy + offset_y][zz + offset_z] = true;
                             total_voxel[xx + offset_x][yy + offset_y][zz + offset_z] = true;
                         }                        
-                        if (accessor.getValue(loc) <= 0.f && (accessor.getValue(openvdb::Coord(xx, yy, zz + 1)) > 0.f))
+                        if (accessor.getValue(loc) <= inside_offset && (accessor.getValue(openvdb::Coord(xx, yy, zz + 1)) > inside_offset))
                         {
                             mark_voxel[xx + offset_x][yy + offset_y][zz + offset_z] = true;
                         }                      
@@ -1694,13 +1695,13 @@ namespace ovdbutil
                         ValueT val_loc = accessor.getValue(loc);
                         ValueT val_up = accessor.getValue(up);
                         // ValueT val_down = accessor.getValue(down);
-                        if (accessor.getValue(loc) <= 0.f && accessor.getValue(up) > 0.f) {
+                        if (accessor.getValue(loc) <= inside_offset && accessor.getValue(up) > inside_offset) {
                             if (!top_mark[x + offset_x][y + offset_y][z + offset_z])
                             {
                                 int zi = z + offset_z;
                                 for (; zi >= 0; zi--)
                                 {
-                                    if (accessor.getValue(openvdb::Coord(x, y, zi - offset_z)) > 0.f)
+                                    if (accessor.getValue(openvdb::Coord(x, y, zi - offset_z)) > inside_offset)
                                         break;
                                     if (top_mark[x + offset_x][y + offset_y][zi])
                                     {
