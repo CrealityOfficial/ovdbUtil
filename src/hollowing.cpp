@@ -1586,7 +1586,7 @@ namespace ovdbutil
                 lines_mark.push_back(line_mark);
                 if (line_mark.size() == 1)
                 {
-                    //volex_support.push_back(trimesh::ivec3(line_support[li][0].x, line_support[li][0].y, line_support[li][0].z));
+                    volex_support.push_back(trimesh::ivec3(line_support[li][0].x, line_support[li][0].y, line_support[li][0].z));
                     continue;
                 }
 
@@ -1604,8 +1604,7 @@ namespace ovdbutil
                     }
                     cx /= dn;
                     cy /= dn;
-                    volex_support.push_back(trimesh::ivec3(cx, cy, line_support[li][0].z));
-                    //volex_support[cx][cy][line_support[li][0].z] = true;
+                    volex_support.push_back(trimesh::ivec3(cx, cy, line_support[li][0].z));                   
                 }
                 else {
                     int cx = 0, cy = 0, dn = 0;
@@ -1622,14 +1621,13 @@ namespace ovdbutil
                     cy /= dn;
                     volex_support.push_back(trimesh::ivec3(cx, cy, line_support[li][0].z));
                 }
-
             }
 
             for (int li = 0; li < line_support.size(); li++)
             {
                 for (int lii = 0; lii < line_support[li].size(); lii++)
                 {
-                    if (lines_mark[li][lii] != 3)
+                    if (lines_mark[li][lii] != 3 || lines_mark[li].size() != 1)
                     {
                         int dx = std::abs(line_support[li][lii].x - volex_support[li].x);
                         int dy = std::abs(line_support[li][lii].y - volex_support[li].y);
