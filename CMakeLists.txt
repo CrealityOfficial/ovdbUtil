@@ -318,7 +318,7 @@ list(APPEND SRCS ${H1} ${S1})
 		
 __assert_target(msbase)
 list(APPEND INCS ${CMAKE_CURRENT_SOURCE_DIR}/include/)
-list(APPEND LIBS openvdb topomesh msbase)
+list(APPEND LIBS openvdb topomesh msbase modelModule)
 set(ILIBS trimesh2 )
 
 __add_common_library(ovdbutil FOLDER openvdb)
