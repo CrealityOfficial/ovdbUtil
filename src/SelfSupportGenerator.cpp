@@ -38,6 +38,33 @@ namespace ovdbutil
         }
     }
 
+    void SelfSupportGenerator::topDown(const VOXELTOOL::VoxelBody &voxelBody, const int& x, const int& y, const int& z)
+    {
+        typename openvdb::FloatGrid::Accessor accessor = gridptr->getAccessor();
+        // 向上进行寻找
+        for (int zNow = z - 1; zNow < voxelData.size(); zNow--)
+        {
+            if (voxelBody.getVoxel(x, y, zNow) == VOXELTOOL::VoxelEnumType::SupportedSolid)
+            {
+                // 上下加自己体素往下掉
+                for (int i = 1; i >= -1; i--)
+                {
+                    openvdb::Coord coordOrigin = toCoord(x, y, zNow + i);
+                    ValueT valOrigin = accessor.getValue(coordOrigin);
+                    openvdb::Coord coord = toCoord(x, y, z + i);
+                    accessor.setValue(coord, valOrigin);
+                }
+                // 将自己之上的值设为背景值
+                for (int z2 = z - 2; z2 >= zNow - 1; z2--)
+                {
+                    openvdb::Coord coord = toCoord(x, y, z2);
+                    accessor.setValue(coord, background);
+                }
+                break;
+            }
+        }
+    }
+
     void SelfSupportGenerator::setBackGround(const int& x, const int& y, const int& z, const VOXELTOOL::VoxelBody& voxelBody)
     {
         typename openvdb::FloatGrid::Accessor accessor = gridptr->getAccessor();
@@ -59,7 +86,7 @@ namespace ovdbutil
     void SelfSupportGenerator::generate()
     {
         VOXELTOOL::VoxelBody voxelBody(voxelData, VOXELTOOL::PhysicsStrategy::Support5);
-        voxelBody.necessarySupport();
+        voxelBody.support();
         typename openvdb::FloatGrid::Accessor accessor = gridptr->getAccessor();
 
         // 从上往下遍历
@@ -79,7 +106,11 @@ namespace ovdbutil
                             voxelBody.getVoxel(x - 1, y, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid ||
                             voxelBody.getVoxel(x, y - 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid ||
                             voxelBody.getVoxel(x + 1, y, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid ||
-                            voxelBody.getVoxel(x, y + 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid
+                            voxelBody.getVoxel(x, y + 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid/* ||
+                            voxelBody.getVoxel(x - 1, y - 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid ||
+                            voxelBody.getVoxel(x + 1, y - 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid ||
+                            voxelBody.getVoxel(x + 1, y + 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid ||
+                            voxelBody.getVoxel(x - 1, y + 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid*/
                             )
                         {
                             if (voxelBody.getVoxel(x, y, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
@@ -87,55 +118,59 @@ namespace ovdbutil
                                 setBackGround(x, y, z, voxelBody);
                                 setValue(x, y, z + 1, background);
                             }
-                            if (voxelBody.getVoxel(x - 1, y, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
+                            else if (voxelBody.getVoxel(x - 1, y, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
                             {
                                 setBackGround(x, y, z, voxelBody);
                                 setValue(x - 1, y, z, background);
                                 setValue(x - 1, y, z + 1, background);
                             }
-                            if (voxelBody.getVoxel(x, y - 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
+                            else if (voxelBody.getVoxel(x, y - 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
                             {
                                 setBackGround(x, y, z, voxelBody);
                                 setValue(x, y - 1, z, background);
                                 setValue(x, y - 1, z + 1, background);
                             }
-                            if (voxelBody.getVoxel(x + 1, y, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
+                            else if (voxelBody.getVoxel(x + 1, y, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
                             {
                                 setBackGround(x, y, z, voxelBody);
                                 setValue(x + 1, y, z, background);
                                 setValue(x + 1, y, z + 1, background);
                             }
-                            if (voxelBody.getVoxel(x, y + 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
+                            else if (voxelBody.getVoxel(x, y + 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
                             {
                                 setBackGround(x, y, z, voxelBody);
                                 setValue(x, y + 1, z, background);
                                 setValue(x, y + 1, z + 1, background);
                             }
+                           /* else if (voxelBody.getVoxel(x - 1, y - 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
+                            {
+                                setBackGround(x, y, z, voxelBody);
+                                setValue(x - 1, y - 1, z, background);
+                                setValue(x - 1, y - 1, z + 1, background);
+                            }
+                            else if (voxelBody.getVoxel(x + 1, y - 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
+                            {
+                                setBackGround(x, y, z, voxelBody);
+                                setValue(x + 1, y - 1, z, background);
+                                setValue(x + 1, y - 1, z + 1, background);
+                            }
+                            else if (voxelBody.getVoxel(x + 1, y + 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
+                            {
+                                setBackGround(x, y, z, voxelBody);
+                                setValue(x + 1, y + 1, z, background);
+                                setValue(x + 1, y + 1, z + 1, background);
+                            }
+                            else if (voxelBody.getVoxel(x - 1, y + 1, z + 1) == VOXELTOOL::VoxelEnumType::SupportedSolid)
+                            {
+                                setBackGround(x, y, z, voxelBody);
+                                setValue(x - 1, y + 1, z, background);
+                                setValue(x - 1, y + 1, z + 1, background);
+                            }*/
                         }
                         else
                         {
-                            // 向上进行寻找
-                            for (int zNow = z - 1; zNow < voxelData.size(); zNow--)
-                            {
-                                if (voxelBody.getVoxel(x, y, zNow) == VOXELTOOL::VoxelEnumType::SupportedSolid)
-                                {
-                                    // 上下加自己体素往下掉
-                                    for (int i = 1; i >= -1; i--)
-                                    {
-                                        openvdb::Coord coordOrigin = toCoord(x, y, zNow + i);
-                                        ValueT valOrigin = accessor.getValue(coordOrigin);
-                                        openvdb::Coord coord = toCoord(x, y, z + i);
-                                        accessor.setValue(coord, valOrigin);
-                                    }
-                                    // 将自己之上的值设为背景值
-                                    for (int z2 = z - 2; z2 >= zNow - 1; z2--)
-                                    {
-                                        openvdb::Coord coord = toCoord(x, y, z2);
-                                        accessor.setValue(coord, background);
-                                    }
-                                    break;
-                                }
-                            }
+                            // 往上寻找
+                            topDown(voxelBody, x, y, z);
                         }
                     }
                 }
